@@ -6,7 +6,7 @@ from discord.ext import commands
 # from rulesets import double_elimination
 from rulesets import single_elimination
 from rulesets import match
-from cogs.tournament_admin import TournamentAdmin
+from cogs.tournament_organizer import TournamentOrganizer
 
 def main():
     parser = argparse.ArgumentParser(description='Starting TournamentBot.')
@@ -46,7 +46,7 @@ def main():
             return
         raise error
 
-    client.add_cog(TournamentAdmin(client))
+    client.add_cog(TournamentOrganizer(client))
 
     client.run(args.token)
 
@@ -74,11 +74,14 @@ def test_rulesets():
     #     print(3 * ' ' + y)
 
     se = single_elimination.SingleElimination()
-    se.add_player("0")
-    se.add_player("1")
-    se.add_player("2")
-    se.add_player("3")
-    se.add_player("4")
+    se.add_player("Willy")
+    se.add_player("Willy2")
+    se.add_player("Willy3")
+    # se.add_player("0")
+    # se.add_player("1")
+    # se.add_player("2")
+    # se.add_player("3")
+    # se.add_player("4")
     # se.add_player("5")
     # se.add_player("6")
     # se.add_player("7")
@@ -96,5 +99,5 @@ def test_rulesets():
 
 
 if __name__ == '__main__':
-    # main()
-    test_rulesets()
+    main()
+    # test_rulesets()

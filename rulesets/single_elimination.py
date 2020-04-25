@@ -105,7 +105,7 @@ class SingleElimination:
                         self.players[player_index + 1]
                     )
 
-                    self.valid_matches[left_match.match_id] = current_match
+                    self.valid_matches[current_match.match_id] = current_match
                 else:
                     left_match = match.Match(self.match_index,
                                             level,
