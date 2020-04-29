@@ -26,19 +26,24 @@ class Match:
     def update_player(self, prevous_match):
         if prevous_match == self.left_match:
             self.player_one = prevous_match.winner
+            self.player_one.set_current_match(self)
             self.left_match = None
 
         if prevous_match == self.right_match:
             self.player_two = prevous_match.winner
+            self.player_two.set_current_match(self)
             self.right_match = None
 
         return self.right_match == None and self.left_match == None
 
-    def update_match(self, player):
-        if player == 0:
+    def update_match(self, result = 0):
+        if result == 0:
             self.winner = self.player_one
         else:
             self.winner = self.player_two
+        
+        self.player_one(result == 0)
+        self.player_two(result != 0)
 
         return self.next_match.update_player(self)
 
@@ -77,6 +82,8 @@ class Match:
 
     def get_player_name(self, player, length):
         if player == None:
-            player = 'bye'
+            name = 'bye'
+        else:
+            name = player.name
 
-        return "[" + player + " "*(length - len(player)) + "]"
+        return "[" + name + " "*(length - len(name)) + "]"

@@ -2,6 +2,8 @@ import discord
 import argparse
 
 from discord.ext import commands
+from discord.utils import get
+
 
 # from rulesets import double_elimination
 from rulesets import single_elimination
@@ -34,9 +36,40 @@ def main():
         await client.process_commands(message)
 
     @client.command()
-    async def test(context, arg):
+    async def test(ctx, arg):
         ''' Test Command '''
-        await context.send(arg)
+        await ctx.send(arg)
+
+    @client.command()
+    async def join(ctx):
+        ''' Join Voice Channel Command '''
+        
+        channel = ctx.message.author.voice.channel
+        
+        voice = get(client.voice_clients, guild=ctx.guild)
+        if voice and voice.is_connected():
+            await voice.move_to(channel)
+        else:
+            voice = await channel.connect()
+
+    @client.command()
+    async def chat(ctx, user : discord.User):
+        ''' Chat another member Command '''
+
+        # await member.user.create_dm()
+        dm = user.dm_channel
+
+        if not dm:
+            dm = await user.create_dm()
+        
+        await dm.send("Hello")        
+
+    @client.command()
+    async def leave(ctx):
+        ''' Leave Voice Channel Command '''
+        voice = get(client.voice_clients, guild=ctx.guild)
+
+        await voice.disconnect()
 
     @client.event
     async def on_command_error(content, error):
@@ -74,24 +107,21 @@ def test_rulesets():
     #     print(3 * ' ' + y)
 
     se = single_elimination.SingleElimination()
-    se.add_player("Willy")
-    se.add_player("Willy2")
-    se.add_player("Willy3")
-    # se.add_player("0")
-    # se.add_player("1")
-    # se.add_player("2")
-    # se.add_player("3")
-    # se.add_player("4")
-    # se.add_player("5")
-    # se.add_player("6")
-    # se.add_player("7")
-    # se.add_player("8")
-    # se.add_player("9")
-    # se.add_player("10")
-    # se.add_player("11")
-    # se.add_player("12")
-    # se.add_player("13")
-    # se.add_player("14")
+    se.add_player("0")
+    se.add_player("1")
+    se.add_player("2")
+    se.add_player("3")
+    se.add_player("4")
+    se.add_player("5")
+    se.add_player("6")
+    se.add_player("7")
+    se.add_player("8")
+    se.add_player("9")
+    se.add_player("10")
+    se.add_player("11")
+    se.add_player("12")
+    se.add_player("13")
+    se.add_player("14")
     # se.add_player("15")
     print(se.start_tournament())
     
