@@ -1,5 +1,8 @@
 # TournamentBot
 Discord TournamentBot for setting up tournament in your own server.
+![Python Windows](https://github.com/wltu/TournamentBot/workflows/Python%20Windows/badge.svg)
+![Python Mac](https://github.com/wltu/TournamentBot/workflows/Python%20Mac/badge.svg)
+![Python Linux](https://github.com/wltu/TournamentBot/workflows/Python%20Linux/badge.svg)
 
 ### Depedencies
  - [discord.py](https://github.com/Rapptz/discord.py)
