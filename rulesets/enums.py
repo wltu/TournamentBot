@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class Bracket(Enum):
     NONE = 0
     TOP = 1
