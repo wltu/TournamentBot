@@ -8,6 +8,7 @@ Discord TournamentBot for setting up tournament in your own server.
 ### Depedencies
  - [discord.py](https://github.com/Rapptz/discord.py)
  - [pytest](https://docs.pytest.org/en/stable/)
+ - [FPMG](https://www.ffmpeg.org/)
  - Python 3.5.3+
 
 ### Get Stared
