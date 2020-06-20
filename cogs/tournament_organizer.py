@@ -39,7 +39,10 @@ class TournamentOrganizer(commands.Cog):
 
     @commands.command(name="clean")
     async def clean(self, ctx):
-        self.clean_tournament_channels()
+        """
+            Remove all the tournament voice channels.
+        """
+        await self.clean_tournament_channels()
 
     @commands.group(name="setup")
     async def setup(self, ctx):
@@ -50,7 +53,7 @@ class TournamentOrganizer(commands.Cog):
             - double elimination -> de
             - round robin -> rr
 
-            Type !setup help format for more info on a the selected format.
+            Type !help setup [format] for more info on a the selected format.
         """
         self.current_TO = ctx.author
 
@@ -113,9 +116,8 @@ class TournamentOrganizer(commands.Cog):
             Signup for current tournament.
         """
 
-        if not self.current_category:
-            await ctx.send("No current tournament available!")
-
+        if not self.current_tournament:
+            await ctx.send("No tournament currently available! Start one with `!setup [format]")
             return
 
         if ctx.author != self.current_TO or member == None:
@@ -132,10 +134,11 @@ class TournamentOrganizer(commands.Cog):
             Report result for current tournament.
         """
 
-        if self.current_tournament == None:
+        if not self.current_tournament:
             await ctx.send(
-                "No tournament currently going on... start one with `!setup`."
+                "No tournament currently going on... start one with `!setup [format]`."
             )
+            return
 
         if ctx.author == self.current_TO:
             self.current_tournament.update_match(match_id, result)
@@ -143,13 +146,31 @@ class TournamentOrganizer(commands.Cog):
             player = self.current_tournament.player_map[ctx.display_name]
             self.current_tournament.update_match(player.current_match, result)
 
+    @report.error
+    async def report_error(self, ctx, error): 
+        if isinstance(error, commands.MissingRequiredArgument):
+            await ctx.send(
+            "Missing Arguments. Try `!help report`.\n" + 
+            "Example: `!report 1 13`\n" +
+            "Player 1 won in match 13."
+            )
+            return
+        
+        raise error
+
     @commands.command(name="start")
     async def start(self, ctx):
         """
             Start current tournament!
         """
+
+        if not self.current_TO:
+            await ctx.send("There is currently no tournament. Try `!setup [format]`")
+            return
+
         if ctx.author != self.current_TO:
-            await ctx.send("Only the TO can starte the tournament!")
+            await ctx.send("Only the current TO can starte the tournament!")
+            return
 
         bracket = self.current_tournament.start_tournament()
 
@@ -183,11 +204,11 @@ class TournamentOrganizer(commands.Cog):
     @setup.command(name="single_elimination", aliases=["se"])
     async def single_elimination(self, ctx):
         """
-            Single Elimination
+            Single Elimination Bracket
         """
         self.current_tournament = SingleElimination()
 
-        await ctx.send("Single Elimination setted up. Signup")
+        await ctx.send("Single Elimination Bracket setted up. Signup!")
 
     @setup.command(name="double_elimination", aliases=["de"])
     async def double_elimination(self, ctx):

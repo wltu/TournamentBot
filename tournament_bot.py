@@ -37,13 +37,11 @@ def main():
         await client.process_commands(message)
 
     @client.event
-    async def on_command_error(content, error):
+    async def on_command_error(ctx, error):
         if isinstance(error, commands.CommandNotFound):
-            await content.channel.send(
+            await ctx.channel.send(
                 "Invalid commmands. Try `!help` to get more information!"
             )
-            return
-        raise error
 
     client.help_command.cog = Common(client)
     client.add_cog(TournamentOrganizer(client))
