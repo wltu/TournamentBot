@@ -45,8 +45,9 @@ def main():
             return
         raise error
 
+    client.help_command.cog = Common(client)
     client.add_cog(TournamentOrganizer(client))
-    client.add_cog(Common(client))
+    client.add_cog(client.help_command.cog)
 
     client.run(args.token)
 
