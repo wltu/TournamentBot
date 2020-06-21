@@ -9,6 +9,17 @@ class Common(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    def play_audio(self, file, voice):
+        if os.name != 'nt' and not discord.opus.is_loaded():
+            try:
+                # full extension for alpine docker image
+                discord.opus.load_opus('libopus.so.0')
+            except OSError:
+                discord.opus.load_opus('opus')
+
+        audio_source = discord.FFmpegPCMAudio(file)
+        voice.play(audio_source)
+
     @commands.command(name="test")
     async def test(self, ctx, arg):
         """ Test Command """
@@ -49,9 +60,8 @@ class Common(commands.Cog):
                 except WindowsError:
                     os.remove("current.mp3")
                     os.rename(file, "current.mp3")
-
-        audio_source = discord.FFmpegPCMAudio("current.mp3")
-        voice.play(audio_source)
+        # discord.opus.load_opus()
+        self.play_audio("current.mp3", voice)
 
     @commands.command(name="join")
     async def join(self, ctx):
@@ -71,12 +81,11 @@ class Common(commands.Cog):
                     "I am moving from " + str(voice.channel) + " to " + str(channel)
                 )
                 await voice.move_to(channel)
-                audio_source = discord.FFmpegPCMAudio("sound/aqua_cry.mp3")
-                voice.play(audio_source)
+
+                self.play_audio("sound/aqua_cry.mp3", voice)
         else:
             voice = await channel.connect()
-            audio_source = discord.FFmpegPCMAudio("sound/aqua_cry.mp3")
-            voice.play(audio_source)
+            self.play_audio("sound/aqua_cry.mp3", voice)
 
     @commands.command(name="chat")
     async def chat(self, ctx, user: discord.User):
