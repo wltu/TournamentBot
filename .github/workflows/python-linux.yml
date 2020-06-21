@@ -21,7 +21,6 @@ jobs:
       run: |
         python3 -m pip install -U discord.py[voice]
         python3 -m pip install --upgrade pip
-        pip install flake8 pytest
         pip install -r requirements.txt
     - name: Lint with flake8
       run: |
