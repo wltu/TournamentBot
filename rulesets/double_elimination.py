@@ -1,4 +1,3 @@
-
 class DoubleElimination:
     def __init__(self):
         self.num_players = 0
@@ -35,9 +34,9 @@ class DoubleElimination:
         for i, player in enumerate(self.players):
             bracket.append(self._get_player_name(player))
 
-            if (i != len(self.players) - 1):
+            if i != len(self.players) - 1:
                 bracket.append(" " * (self.longest_player_name_length + 2))
-        
+
         bracket_output = ""
 
         for b in bracket:
@@ -46,11 +45,13 @@ class DoubleElimination:
         return bracket_output
 
     def _get_player_name(self, player):
-        return "[" + player + " "*(self.longest_player_name_length - len(player)) + "]"
+        return (
+            "[" + player + " " * (self.longest_player_name_length - len(player)) + "]"
+        )
 
     def _update_name_length(self):
         self.longest_player_name_length = 0
         for player_name in self.players:
             self.longest_player_name_length = max(
-                len(player_name),
-                self.longest_player_name_length)
+                len(player_name), self.longest_player_name_length
+            )

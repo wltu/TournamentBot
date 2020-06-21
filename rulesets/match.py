@@ -2,11 +2,7 @@ from .enums import Bracket
 
 
 class Match:
-    def __init__(self,
-                 match_id,
-                 level=0,
-                 player_one=None,
-                 player_two=None):
+    def __init__(self, match_id, level=0, player_one=None, player_two=None):
         self.player_one = player_one
         self.player_two = player_two
 
@@ -36,12 +32,12 @@ class Match:
 
         return self.right_match == None and self.left_match == None
 
-    def update_match(self, result = 0):
+    def update_match(self, result=0):
         if result == 0:
             self.winner = self.player_one
         else:
             self.winner = self.player_two
-        
+
         self.player_one(result == 0)
         self.player_two(result != 0)
 
@@ -63,27 +59,36 @@ class Match:
         return self.player_one, self.player_two
 
     def draw_bracket(self, name_length, connect_bracket):
-        bracket = [self.get_player_name(self.player_one, name_length) + 2 * ' ',
-                   ' ' * (name_length + 1) + "|--",
-                   self.get_player_name(self.player_two, name_length) + 2 * ' ']
+        bracket = [
+            self.get_player_name(self.player_one, name_length) + 2 * " ",
+            " " * (name_length + 1) + "|--",
+            self.get_player_name(self.player_two, name_length) + 2 * " ",
+        ]
 
         if connect_bracket == Bracket.TOP:
-            bracket[0] += '|'
-            bracket[1] += '|'
+            bracket[0] += "|"
+            bracket[1] += "|"
         if connect_bracket == Bracket.DOWN:
-            bracket[1] += '|'
-            bracket[2] += '|'
+            bracket[1] += "|"
+            bracket[2] += "|"
 
         return bracket
 
     def summary(self):
-        return str(self.match_id) + ": " + str(self.player_one) + " vs. " + str(self.player_two) \
-            + " level: " + str(self.level)
+        return (
+            str(self.match_id)
+            + ": "
+            + str(self.player_one)
+            + " vs. "
+            + str(self.player_two)
+            + " level: "
+            + str(self.level)
+        )
 
     def get_player_name(self, player, length):
         if player == None:
-            name = 'bye'
+            name = "bye"
         else:
             name = player.name
 
-        return "[" + name + " "*(length - len(name)) + "]"
+        return "[" + name + " " * (length - len(name)) + "]"
