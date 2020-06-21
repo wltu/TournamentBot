@@ -14,12 +14,12 @@ class SingleElimination:
         self.all_matches = []
         self.match_index = 0
 
-    def add_player(self, user : discord.Member):
+    def add_player(self, user: discord.Member):
         name = user.display_name
 
         if name in self.player_map.keys():
             return False
-        
+
         player = Player(user)
 
         self.player_map[name] = player
@@ -72,10 +72,12 @@ class SingleElimination:
 
         for current_match in queue:
             if extra_players:
-                left_match = Match(self.match_index,
-                                         level,
-                                         self.players[player_index],
-                                         self.players[player_index + 1])
+                left_match = Match(
+                    self.match_index,
+                    level,
+                    self.players[player_index],
+                    self.players[player_index + 1],
+                )
                 right_match = None
                 self.valid_matches[left_match.match_id] = left_match
                 self.all_matches.append(left_match)
@@ -85,11 +87,13 @@ class SingleElimination:
                 player_index += 2
 
                 right_match = None
-                if(extra_players):
-                    right_match = Match(self.match_index,
-                                              level,
-                                              self.players[player_index],
-                                              self.players[player_index + 1])
+                if extra_players:
+                    right_match = Match(
+                        self.match_index,
+                        level,
+                        self.players[player_index],
+                        self.players[player_index + 1],
+                    )
                     extra_players -= 1
                     player_index += 2
                     self.valid_matches[right_match.match_id] = right_match
@@ -97,10 +101,9 @@ class SingleElimination:
                     self.match_index += 1
 
                 if not right_match:
-                    right_match = Match(self.match_index,
-                                              level,
-                                              self.players[player_index],
-                                              None)
+                    right_match = Match(
+                        self.match_index, level, self.players[player_index], None
+                    )
                     self.match_index += 1
                     player_index += 1
 
@@ -111,20 +114,20 @@ class SingleElimination:
             else:
                 if not has_extra:
                     current_match.set_players(
-                        self.players[player_index],
-                        self.players[player_index + 1]
+                        self.players[player_index], self.players[player_index + 1]
                     )
 
                     self.valid_matches[current_match.match_id] = current_match
                 else:
-                    left_match = Match(self.match_index,
-                                             level,
-                                             self.players[player_index],
-                                             None)
-                    right_match = Match(self.match_index + 1,
-                                              level,
-                                              self.players[player_index + 1],
-                                              None)
+                    left_match = Match(
+                        self.match_index, level, self.players[player_index], None
+                    )
+                    right_match = Match(
+                        self.match_index + 1,
+                        level,
+                        self.players[player_index + 1],
+                        None,
+                    )
 
                     self.match_index += 2
 
@@ -188,8 +191,8 @@ class SingleElimination:
     def get_initial_bracket(self):
         if len(self.all_matches) == 1:
             output = self.all_matches[0].draw_bracket(
-                self.longest_player_name_length,
-                Bracket.NONE)
+                self.longest_player_name_length, Bracket.NONE
+            )
         else:
             count = 0
             output = []
@@ -198,24 +201,26 @@ class SingleElimination:
             end = len(self.valid_matches) - 1
             for _, current_match in self.valid_matches.items():
                 if count % 2:
-                    x = current_match.draw_bracket(self.longest_player_name_length,
-                                                   Bracket.TOP)
+                    x = current_match.draw_bracket(
+                        self.longest_player_name_length, Bracket.TOP
+                    )
                     output.extend(x)
 
                     if (count + 1) % 4:
                         if count != end:
                             output.append(
-                                ' ' * (self.longest_player_name_length + 7) + '|--')
+                                " " * (self.longest_player_name_length + 7) + "|--"
+                            )
                     else:
-                        output.append('')
+                        output.append("")
                 else:
-                    x = current_match.draw_bracket(self.longest_player_name_length,
-                                                   Bracket.DOWN)
+                    x = current_match.draw_bracket(
+                        self.longest_player_name_length, Bracket.DOWN
+                    )
                     output.extend(x)
 
                     update_index.append(len(output))
-                    output.append(
-                        ' ' * (self.longest_player_name_length + 4) + '|--')
+                    output.append(" " * (self.longest_player_name_length + 4) + "|--")
                 count += 1
 
             draw_line = False
@@ -225,15 +230,15 @@ class SingleElimination:
                     if i == update_index[0]:
                         draw_line = True
                         update_index.pop(0)
-                        output[i] += '|'
+                        output[i] += "|"
                         length = len(output[i])
                 else:
                     if i == update_index[0]:
                         draw_line = False
                         update_index.pop(0)
-                        output[i] += '|'
+                        output[i] += "|"
                     elif len(output[i]) < length:
-                        output[i] += ' ' * (length - len(output[i]) - 1) + '|'
+                        output[i] += " " * (length - len(output[i]) - 1) + "|"
 
                 if len(update_index) == 0:
                     break
@@ -241,7 +246,7 @@ class SingleElimination:
         output_string = ""
 
         for line in output:
-            output_string += line + '\n'
+            output_string += line + "\n"
 
         return output_string
 
@@ -256,5 +261,6 @@ class SingleElimination:
         for player in self.players:
             name = player.name
             self.longest_player_name_length = max(
-                len(name),
-                self.longest_player_name_length)
+                len(name), self.longest_player_name_length
+            )
+

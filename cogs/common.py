@@ -8,17 +8,41 @@ from discord.ext import commands
 class Common(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.current_song = None
+        self.song_queue = []
+        self.voice_channel = None
 
-    def play_audio(self, file, voice):
-        if os.name != 'nt' and not discord.opus.is_loaded():
+    def after_audio(self, error):
+        self.song_queue = self.song_queue[1:]
+
+        if len(self.song_queue) > 0:
+            print("Play next song!")
+            self.play_audio(self.voice_channel)
+        else:
+            dir = './play'
+            filelist = [ f for f in os.listdir(dir) if f.endswith(".mp3") ]
+            for f in filelist:
+                os.remove(os.path.join(dir, f))
+
+    def play_audio(self, voice, song=None):
+        if os.name != "nt" and not discord.opus.is_loaded():
             try:
                 # full extension for alpine docker image
-                discord.opus.load_opus('libopus.so.0')
+                discord.opus.load_opus("libopus.so.0")
             except OSError:
-                discord.opus.load_opus('opus')
+                discord.opus.load_opus("opus")
 
-        audio_source = discord.FFmpegPCMAudio(file)
-        voice.play(audio_source)
+        if voice.is_playing():
+            voice.stop()
+
+        self.voice_channel = voice
+
+        if not song:
+            audio_source = discord.FFmpegPCMAudio(self.song_queue[0])
+            voice.play(audio_source, after=self.after_audio)
+        else:
+            audio_source = discord.FFmpegPCMAudio(song)
+            voice.play(audio_source, after=None)
 
     @commands.command(name="test")
     async def test(self, ctx, arg):
@@ -46,22 +70,25 @@ class Common(commands.Cog):
                     "preferredquality": "192",
                 }
             ],
+            "outtmpl": "./play/%(title)s.%(ext)s",
+            "forcefilename": True,
         }
 
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-            print("Downloading audio!")
-            ydl.download([url])
+            info = ydl.extract_info(url, download=False)
+            filename = ydl.prepare_filename(info)
+            filename = filename[:-5]
 
-        for file in os.listdir("./"):
-            if file.endswith(".mp3"):
-                print("Downloaded {file}")
-                try:
-                    os.rename(file, "current.mp3")
-                except WindowsError:
-                    os.remove("current.mp3")
-                    os.rename(file, "current.mp3")
-        # discord.opus.load_opus()
-        self.play_audio("current.mp3", voice)
+            if filename + ".mp3" not in self.song_queue:
+                print("Downloading audio!")
+                ydl.download([url])
+            
+            self.song_queue.append(filename + ".mp3")
+            if not voice.is_playing():
+                await ctx.send("Playing `" + filename[5:] + "` in " + str(voice.channel))
+                self.play_audio(voice)
+            else:
+                await ctx.send("Putting `" + filename[5:] + "` in the queue.")
 
     @commands.command(name="join")
     async def join(self, ctx):
@@ -82,10 +109,11 @@ class Common(commands.Cog):
                 )
                 await voice.move_to(channel)
 
-                self.play_audio("sound/aqua_cry.mp3", voice)
+                self.play_audio(voice=voice, song="sound/aqua_cry.mp3")
+
         else:
             voice = await channel.connect()
-            self.play_audio("sound/aqua_cry.mp3", voice)
+            self.play_audio(voice=voice, song="sound/aqua_cry.mp3")
 
     @commands.command(name="chat")
     async def chat(self, ctx, user: discord.User):
