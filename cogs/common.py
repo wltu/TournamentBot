@@ -1,3 +1,4 @@
+import asyncio
 import discord
 import os
 import youtube_dl
@@ -10,19 +11,66 @@ class Common(commands.Cog):
         self.bot = bot
         self.current_song = None
         self.song_queue = []
+        self.channel_queue = []
         self.voice_channel = None
 
-    def after_audio(self, error):
+    def user_channel(self, ctx):
+        if ctx.message.author.voice is None:
+            return None, False
+
+        return ctx.message.author.voice.channel, True
+
+    def clean_songs(self):
+        dir = "./play"
+        filelist = [f for f in os.listdir(dir) if f.endswith(".mp3")]
+        for f in filelist:
+            os.remove(os.path.join(dir, f))
+
+    async def join_channel(self, ctx, channel=None):
+        if not ctx.message.author.voice:
+            await ctx.send("You are not in a channel :angry:")
+            return None
+
+        if not channel:
+            channel = ctx.message.author.voice.channel
+        voice = get(self.bot.voice_clients, guild=ctx.guild)
+
+        if voice and voice.is_connected():
+            if voice.channel == channel:
+                await ctx.send("I am already in " + str(channel) + "!")
+            else:
+                await ctx.send(
+                    "I am moving from " + str(voice.channel) + " to " + str(channel)
+                )
+                await voice.move_to(channel)
+        else:
+            voice = await channel.connect()
+
+        return voice
+
+    async def play_next(self):
         self.song_queue = self.song_queue[1:]
+        self.channel_queue = self.channel_queue[1:]
 
         if len(self.song_queue) > 0:
             print("Play next song!")
+            if not self.voice_channel:
+                self.voice_channel = await self.channel_queue[0].connect()
+            elif self.voice_channel.channel != self.channel_queue[0]:
+                await self.voice_channel.move_to(self.channel_queue[0])
+
             self.play_audio(self.voice_channel)
         else:
-            dir = './play'
-            filelist = [ f for f in os.listdir(dir) if f.endswith(".mp3") ]
-            for f in filelist:
-                os.remove(os.path.join(dir, f))
+            await self.voice_channel.disconnect()
+            self.voice_channel = None
+            # self.clean_songs()
+
+    def after_audio(self, error):
+        try:
+            func = asyncio.run_coroutine_threadsafe(self.play_next(), self.bot.loop)
+            func.result()
+        except Exception as e:
+            print(e)
 
     def play_audio(self, voice, song=None):
         if os.name != "nt" and not discord.opus.is_loaded():
@@ -52,14 +100,8 @@ class Common(commands.Cog):
     @commands.command(name="play")
     async def play(self, ctx, url):
         """ Play Music from YouTube """
+        channel = ctx.message.author.voice.channel
         voice = get(self.bot.voice_clients, guild=ctx.guild)
-
-        if not voice or not voice.is_connected():
-            await self.join(ctx)
-            voice = get(self.bot.voice_clients, guild=ctx.guild)
-
-            if not voice:
-                return
 
         ydl_opts = {
             "format": "bestaudio/best",
@@ -82,37 +124,37 @@ class Common(commands.Cog):
             if filename + ".mp3" not in self.song_queue:
                 print("Downloading audio!")
                 ydl.download([url])
-            
+
             self.song_queue.append(filename + ".mp3")
-            if not voice.is_playing():
-                await ctx.send("Playing `" + filename[5:] + "` in " + str(voice.channel))
+            self.channel_queue.append(channel)
+
+            if not voice or not voice.is_playing():
+                if not voice or not voice.is_connected():
+                    if not voice:
+                        voice = await channel.connect()
+                    else:
+                        await voice.move_to(channel)
+
+                await ctx.send(
+                    "Playing `" + filename[5:] + "` in `" + str(channel) + "`"
+                )
                 self.play_audio(voice)
             else:
-                await ctx.send("Putting `" + filename[5:] + "` in the queue.")
+                await ctx.send(
+                    "Putting `"
+                    + filename[5:]
+                    + "` in `"
+                    + str(channel)
+                    + "` in the queue."
+                )
 
     @commands.command(name="join")
     async def join(self, ctx):
         """ Join Your Current Voice Channel """
-        if ctx.message.author.voice is None:
-            await ctx.send("You are not in a channel :angry:")
-            return
 
-        channel = ctx.message.author.voice.channel
-        voice = get(self.bot.voice_clients, guild=ctx.guild)
-        if voice and voice.is_connected():
+        voice = await self.join_channel(ctx)
 
-            if voice.channel == channel:
-                await ctx.send("I am already in " + str(channel) + "!")
-            else:
-                await ctx.send(
-                    "I am moving from " + str(voice.channel) + " to " + str(channel)
-                )
-                await voice.move_to(channel)
-
-                self.play_audio(voice=voice, song="sound/aqua_cry.mp3")
-
-        else:
-            voice = await channel.connect()
+        if voice:
             self.play_audio(voice=voice, song="sound/aqua_cry.mp3")
 
     @commands.command(name="chat")
