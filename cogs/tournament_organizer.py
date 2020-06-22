@@ -240,7 +240,16 @@ class TournamentOrganizer(commands.Cog):
             Show your match history for current tournament.
             If no tournament active, show the most recent tournament
         """
-        await ctx.send("TODO: Match History!")
+        player_name = ctx.author.display_name
+
+        if self.current_tournament:
+            await ctx.send("Your match history from the current tournament")
+            await ctx.send(self.current_tournament.get_history(player_name))
+        elif self.last_tournament:
+            await ctx.send("Your match history from the last tournament")
+            await ctx.send(self.last_tournament.get_history(player_name))
+        else:
+            await ctx.send("No past tournament within this server!")
 
     @setup.command(name="single_elimination", aliases=["se"])
     async def single_elimination(self, ctx):

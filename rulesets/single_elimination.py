@@ -52,7 +52,7 @@ class SingleElimination:
         for match in history:
             p1 = match.player_one.name
             p2 = match.player_two.name
-            winner = match.winner
+            winner = match.winner.name
             output += "{0} vs {1} : {2} won\n".format(p1, p2, winner)
 
         return output
