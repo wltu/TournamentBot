@@ -31,6 +31,13 @@ class SingleElimination:
 
     def get_players(self):
         return self.players
+    
+    def get_opponent(self, player):
+        if not self.player_map.get(player, None):
+            return "You are not in the tournament"
+        
+        return self.player_map[player].get_opponent()
+
 
     def start_tournament(self, shuffle = True):
 
@@ -184,10 +191,6 @@ class SingleElimination:
         for current_match in add_matches:
             self.valid_matches[current_match.match_id] = current_match
 
-        # print()
-        # for x in self.valid_matches:
-        #     print(self.valid_matches[x].summary())
-
         return bracket, True
 
     def update_match(self, match_index, result):
@@ -200,9 +203,6 @@ class SingleElimination:
         next_match = self.valid_matches[match_index].next_match
         self.valid_matches[next_match.match_id] = next_match        
         self.valid_matches.pop(match_index, None)
-
-        # for x in self.valid_matches:
-        #     print(self.valid_matches[x].summary())
 
         return None
 

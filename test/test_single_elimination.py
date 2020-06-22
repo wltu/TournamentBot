@@ -125,3 +125,20 @@ def test_end_game():
     assert tournament.update_match(1, 1) == None
     assert tournament.update_match(2, 0) == None
     assert tournament.update_match(0, 0).name == "player1"
+
+def test_next_match():
+    tournament = se()
+
+    for i in range(4):
+        tournament.add_player(MockMember("player" + str(i)))
+
+    tournament.start_tournament(False)
+
+    assert "You are not in the tournament" == tournament.get_opponent("player")
+
+    assert "Your next opponent is player1" == tournament.get_opponent("player0")
+    assert "Your next opponent is player3" == tournament.get_opponent("player2")
+
+    tournament.update_match(1, 0)
+    assert "Your next opponent is the winner of player2 vs player3" == tournament.get_opponent("player0")
+    assert "You are out of the tournament!" == tournament.get_opponent("player1")

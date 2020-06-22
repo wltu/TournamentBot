@@ -12,9 +12,21 @@ class Match:
         self.level = level
         self.match_id = match_id
 
+        if player_one:
+            self.player_one.set_current_match(self)
+
+        if player_two:
+            self.player_two.set_current_match(self)
+
     def set_players(self, player_one, player_two):
         self.player_one = player_one
         self.player_two = player_two
+
+        if player_one:
+            self.player_one.set_current_match(self)
+
+        if player_two:
+            self.player_two.set_current_match(self)
 
     def set_next_match(self, next_match):
         self.next_match = next_match

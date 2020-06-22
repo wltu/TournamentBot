@@ -81,8 +81,8 @@ def test_rulesets():
     se.add_player(MockMember("1"))
     se.add_player(MockMember("2"))
     se.add_player(MockMember("3"))
-    se.add_player(MockMember("4"))
-    se.add_player(MockMember("5"))
+    # se.add_player(MockMember("4"))
+    # se.add_player(MockMember("5"))
     # se.add_player(MockMember("6"))
     # se.add_player(MockMember("7"))
     # se.add_player(MockMember("8"))
@@ -96,10 +96,10 @@ def test_rulesets():
     bracket, _ = se.start_tournament(False)
     print(bracket)
 
-    for key, val in se.valid_matches.items():
-        print(key)
-        print(val.summary())
-
+    # for key, val in se.valid_matches.items():
+    #     print(key)
+    #     print(val.summary())
+    
     # se.update_match(7, 0)
 
     # print("update")
@@ -110,6 +110,20 @@ def test_rulesets():
 
 
     # print(se.get_initial_bracket())
+
+    # tournament.player_map["player0"].next_match()
+
+    print(se.player_map["0"].current_match.summary())
+    print(se.player_map["0"].get_opponent())
+    print(se.player_map["2"].name)
+    print(se.player_map["2"].current_match.summary())
+    print(se.player_map["2"].get_opponent())
+
+    se.update_match(1, 0)
+    print(se.player_map["0"].current_match.summary())
+    print(se.player_map["0"].get_opponent())
+
+    
 
 
 if __name__ == "__main__":
