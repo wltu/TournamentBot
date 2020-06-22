@@ -38,6 +38,24 @@ class SingleElimination:
         
         return self.player_map[player].get_opponent()
 
+    def get_history(self, player):
+        if not self.player_map.get(player, None):
+            return "You do not have match history for most recent tournament"
+        
+        history = self.player_map[player].get_history()
+
+        if len(history) == 0:
+            return "No match played yet."
+
+        output = ""
+
+        for match in history:
+            p1 = match.player_one.name
+            p2 = match.player_two.name
+            winner = match.winner.name
+            output += "{0} vs {1} : {2} won\n".format(p1, p2, winner)
+
+        return output
 
     def start_tournament(self, shuffle = True):
 

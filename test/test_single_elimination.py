@@ -142,3 +142,25 @@ def test_next_match():
     tournament.update_match(1, 0)
     assert "Your next opponent is the winner of player2 vs player3" == tournament.get_opponent("player0")
     assert "You are out of the tournament!" == tournament.get_opponent("player1")
+
+def test_history():
+    tournament = se()
+
+    for i in range(4):
+        tournament.add_player(MockMember("player" + str(i)))
+
+    tournament.start_tournament(False)
+    
+    assert "You do not have match history for most recent tournament" == tournament.get_history("player")
+    assert "No match played yet." == tournament.get_history("player0")
+
+    tournament.update_match(1, 0)
+    history = "player0 vs player1 : player0 won\n"
+    assert history == tournament.get_history("player0")
+
+    tournament.update_match(2, 0)
+    tournament.update_match(0, 1)
+
+    history += "player0 vs player2 : player2 won\n"
+    assert history == tournament.get_history("player0")
+
