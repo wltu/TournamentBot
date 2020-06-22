@@ -74,27 +74,56 @@ def test_rulesets():
 
     # for y in x:
     #     print(3 * ' ' + y)
+    from test.mock.mock_member import MockMember
 
     se = single_elimination.SingleElimination()
-    se.add_player("0")
-    se.add_player("1")
-    se.add_player("2")
-    se.add_player("3")
-    se.add_player("4")
-    se.add_player("5")
-    se.add_player("6")
-    se.add_player("7")
-    se.add_player("8")
-    se.add_player("9")
-    se.add_player("10")
-    se.add_player("11")
-    se.add_player("12")
-    se.add_player("13")
-    se.add_player("14")
-    # se.add_player("15")
-    print(se.start_tournament())
+    se.add_player(MockMember("0"))
+    se.add_player(MockMember("1"))
+    se.add_player(MockMember("2"))
+    se.add_player(MockMember("3"))
+    # se.add_player(MockMember("4"))
+    # se.add_player(MockMember("5"))
+    # se.add_player(MockMember("6"))
+    # se.add_player(MockMember("7"))
+    # se.add_player(MockMember("8"))
+    # se.add_player(MockMember("9"))
+    # se.add_player(MockMember("10"))
+    # se.add_player(MockMember("11"))
+    # se.add_player(MockMember("12"))
+    # se.add_player(MockMember("13"))
+    # se.add_player(MockMember("14"))
+    # se.add_player(MockMember("15"))
+    bracket, _ = se.start_tournament(False)
+    print(bracket)
+
+    # for key, val in se.valid_matches.items():
+    #     print(key)
+    #     print(val.summary())
+    
+    # se.update_match(7, 0)
+
+    # print("update")
+
+    # for key, val in se.valid_matches.items():
+    #     print(key)
+    #     print(val.summary())
+
 
     # print(se.get_initial_bracket())
+
+    # tournament.player_map["player0"].next_match()
+
+    print(se.player_map["0"].current_match.summary())
+    print(se.player_map["0"].get_opponent())
+    print(se.player_map["2"].name)
+    print(se.player_map["2"].current_match.summary())
+    print(se.player_map["2"].get_opponent())
+
+    se.update_match(1, 0)
+    print(se.player_map["0"].current_match.summary())
+    print(se.player_map["0"].get_opponent())
+
+    
 
 
 if __name__ == "__main__":

@@ -13,6 +13,8 @@ class SingleElimination:
         self.player_map = {}
         self.all_matches = []
         self.match_index = 0
+        self.valid_matches = {}
+
 
     def add_player(self, user: discord.Member):
         name = user.display_name
@@ -29,9 +31,23 @@ class SingleElimination:
 
     def get_players(self):
         return self.players
+    
+    def get_opponent(self, player):
+        if not self.player_map.get(player, None):
+            return "You are not in the tournament"
+        
+        return self.player_map[player].get_opponent()
 
-    def start_tournament(self):
+
+    def start_tournament(self, shuffle = True):
+
+        if len(self.players) < 2:
+            return None, False
+
         self._update_name_length()
+        self.valid_matches = {}
+        self.match_index = 0
+
         level = 0
 
         self.head_match = Match(self.match_index, level)
@@ -43,7 +59,9 @@ class SingleElimination:
         queue = [self.head_match]
         bracket_size = 1
         size = 1
-        random.shuffle(self.players)
+
+        if shuffle:
+            random.shuffle(self.players)
 
         while len(self.players) >= 4 * bracket_size:
             current_match = queue.pop(0)
@@ -173,20 +191,20 @@ class SingleElimination:
         for current_match in add_matches:
             self.valid_matches[current_match.match_id] = current_match
 
-        # print()
-        # for x in self.valid_matches:
-        #     print(self.valid_matches[x].summary())
-
-        return bracket
+        return bracket, True
 
     def update_match(self, match_index, result):
-        if self.valid_matches[match_index].update_match(result):
-            self.valid_matches[match_index] = self.valid_matches[match_index].next_match
-        else:
-            self.valid_matches.pop(match_index, None)
+        ''' Update Bracket Matches. Return the winner when tournament is over. '''
+        self.valid_matches[match_index].update_match(result)
 
-        for x in self.valid_matches:
-            print(self.valid_matches[x].summary())
+        if match_index == 0:
+            return self.valid_matches[match_index].winner
+
+        next_match = self.valid_matches[match_index].next_match
+        self.valid_matches[next_match.match_id] = next_match        
+        self.valid_matches.pop(match_index, None)
+
+        return None
 
     def get_initial_bracket(self):
         if len(self.all_matches) == 1:
@@ -246,8 +264,10 @@ class SingleElimination:
         output_string = ""
 
         for line in output:
-            output_string += line + "\n"
-
+            if len(line)> 0:
+                output_string += line + "\n"
+        
+        # return output
         return output_string
 
     def print_summary(self, current_match):

@@ -14,6 +14,8 @@ class TournamentOrganizer(commands.Cog):
         self.current_category = None
         self.current_TO = None
 
+        self.no_tournament_message = "No tournament currently available! Start one with `!setup [format]`"
+
     async def clean_tournament_channels(self):
         """ Remove tournament channels """
         for channel in self.channels:
@@ -117,16 +119,16 @@ class TournamentOrganizer(commands.Cog):
         """
 
         if not self.current_tournament:
-            await ctx.send("No tournament currently available! Start one with `!setup [format]")
+            await ctx.send(self.no_tournament_message)
             return
 
         if ctx.author != self.current_TO or member == None:
             member = ctx.author
 
         if self.current_tournament.add_player(member):
-            await ctx.send(member.display_name + " is now signed up!")
+            await ctx.send(member.mention + " is now signed up!")
         else:
-            await ctx.send(member.display_name + " is already signed up!")
+            await ctx.send(member.mention + " is already signed up!")
 
     @commands.command(name="report")
     async def report(self, ctx, result: int, match_id: int = -1):
@@ -135,27 +137,38 @@ class TournamentOrganizer(commands.Cog):
         """
 
         if not self.current_tournament:
-            await ctx.send(
-                "No tournament currently going on... start one with `!setup [format]`."
-            )
+            await ctx.send(self.no_tournament_message)
+            
             return
-
+        winner = None
         if ctx.author == self.current_TO:
-            self.current_tournament.update_match(match_id, result)
+            winner = self.current_tournament.update_match(match_id, result)
         else:
             player = self.current_tournament.player_map[ctx.display_name]
-            self.current_tournament.update_match(player.current_match, result)
+            winner = self.current_tournament.update_match(player.current_match, result)
+        
+        if winner:
+            await ctx.send(
+                winner.name + " won the tournament! Nice."
+            )
+
+            self.current_tournament = None
+            self.current_TO = None
+            self.current_category = None
+
+            await self.clean_tournament_channels()
+
 
     @report.error
-    async def report_error(self, ctx, error): 
+    async def report_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.send(
-            "Missing Arguments. Try `!help report`.\n" + 
-            "Example: `!report 1 13`\n" +
-            "Player 1 won in match 13."
+                "Missing Arguments. Try `!help report`.\n"
+                + "Example: `!report 1 13`\n"
+                + "Player 1 won in match 13."
             )
             return
-        
+
         raise error
 
     @commands.command(name="start")
@@ -172,7 +185,13 @@ class TournamentOrganizer(commands.Cog):
             await ctx.send("Only the current TO can starte the tournament!")
             return
 
-        bracket = self.current_tournament.start_tournament()
+        bracket, valid = self.current_tournament.start_tournament()
+
+        if not valid:
+            await ctx.send(
+                "Not enough players to start the tournament! Must have at least 2 players."
+            )
+            return
 
         await ctx.send("Tournament Started!")
         await ctx.send("```" + bracket + "```")
@@ -200,6 +219,28 @@ class TournamentOrganizer(commands.Cog):
                 await dm.send(invite)
 
             i += 1
+
+    @commands.command(name="match")
+    async def match(self, ctx):
+        """
+            Show the opponents for your next match. 
+        """
+        player_name = ctx.author.display_name
+
+        if not self.current_tournament:
+            await ctx.send(self.no_tournament_message)
+
+            return
+            
+        await ctx.send(self.current_tournament.get_opponent(player_name))
+
+    @commands.command(name="history")
+    async def history(self, ctx):
+        """
+            Show your match history for current tournament.
+            If no tournament active, show the most recent tournament
+        """
+        await ctx.send("TODO: Match History!")
 
     @setup.command(name="single_elimination", aliases=["se"])
     async def single_elimination(self, ctx):

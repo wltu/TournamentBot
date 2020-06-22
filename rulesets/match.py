@@ -12,9 +12,21 @@ class Match:
         self.level = level
         self.match_id = match_id
 
+        if player_one:
+            self.player_one.set_current_match(self)
+
+        if player_two:
+            self.player_two.set_current_match(self)
+
     def set_players(self, player_one, player_two):
         self.player_one = player_one
         self.player_two = player_two
+
+        if player_one:
+            self.player_one.set_current_match(self)
+
+        if player_two:
+            self.player_two.set_current_match(self)
 
     def set_next_match(self, next_match):
         self.next_match = next_match
@@ -30,18 +42,23 @@ class Match:
             self.player_two.set_current_match(self)
             self.right_match = None
 
-        return self.right_match == None and self.left_match == None
+        # return self.right_match == None and self.left_match == None
 
     def update_match(self, result=0):
+        ''' Update match results '''
         if result == 0:
             self.winner = self.player_one
         else:
             self.winner = self.player_two
 
-        self.player_one(result == 0)
-        self.player_two(result != 0)
+        if self.player_one: 
+            self.player_one.update_match(result == 0)
 
-        return self.next_match.update_player(self)
+        if self.player_two: 
+            self.player_two.update_match(result != 0)
+
+        if self.next_match:
+            self.next_match.update_player(self)
 
     def check_match(self):
         return self.player_one != None and self.player_two != None

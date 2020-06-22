@@ -59,9 +59,10 @@ class Common(commands.Cog):
         voice.play(audio_source)
 
     @commands.command(name="test")
-    async def test(self, ctx, arg):
+    async def test(self, ctx, member : discord.Member):
         """ Test Command """
-        await ctx.send(arg)
+        print(member.mention)
+        await ctx.send("test: " + member.mention)
 
     @commands.command(name="play")
     async def play(self, ctx, url):
