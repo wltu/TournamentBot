@@ -113,5 +113,5 @@ def test_rulesets():
 
 
 if __name__ == "__main__":
-    # main()
-    test_rulesets()
+    main()
+    # test_rulesets()

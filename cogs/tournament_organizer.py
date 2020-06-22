@@ -118,7 +118,7 @@ class TournamentOrganizer(commands.Cog):
 
         if not self.current_tournament:
             await ctx.send(
-                "No tournament currently available! Start one with `!setup [format]"
+                "No tournament currently available! Start one with `!setup [format]`"
             )
             return
 
@@ -141,12 +141,21 @@ class TournamentOrganizer(commands.Cog):
                 "No tournament currently going on... start one with `!setup [format]`."
             )
             return
-
+        winner = None
         if ctx.author == self.current_TO:
-            self.current_tournament.update_match(match_id, result)
+            winner = self.current_tournament.update_match(match_id, result)
         else:
             player = self.current_tournament.player_map[ctx.display_name]
-            self.current_tournament.update_match(player.current_match, result)
+            winner = self.current_tournament.update_match(player.current_match, result)
+        
+        if winner:
+            await ctx.send(
+                winner.name + " won the tournament! Nice."
+            )
+
+            self.current_tournament = None
+            self.current_TO = None
+            self.current_category = None
 
     @report.error
     async def report_error(self, ctx, error):
@@ -208,6 +217,21 @@ class TournamentOrganizer(commands.Cog):
                 await dm.send(invite)
 
             i += 1
+
+    @commands.command(name="match")
+    async def match(self, ctx):
+        """
+            Show the opponents for your next match. 
+        """
+        await ctx.send("TODO: MATCH opponents!")
+
+    @commands.command(name="history")
+    async def history(self, ctx):
+        """
+            Show your match history for current tournament.
+            If no tournament active, show the most recent tournament
+        """
+        await ctx.send("TODO: Match History!")
 
     @setup.command(name="single_elimination", aliases=["se"])
     async def single_elimination(self, ctx):
