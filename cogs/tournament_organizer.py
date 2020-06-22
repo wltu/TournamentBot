@@ -13,6 +13,7 @@ class TournamentOrganizer(commands.Cog):
         self.main_channel = None
         self.current_category = None
         self.current_TO = None
+        self.last_tournament = None
 
         self.no_tournament_message = "No tournament currently available! Start one with `!setup [format]`"
 
@@ -39,11 +40,16 @@ class TournamentOrganizer(commands.Cog):
             else:
                 await member.move_to(self.channels[channel_id])
 
-    @commands.command(name="clean")
-    async def clean(self, ctx):
+    @commands.command(name="end")
+    async def end(self, ctx):
         """
-            Remove all the tournament voice channels.
+            End the current tournament and remove all the tournament voice channels.
         """
+        self.last_tournament = self.current_tournament
+        self.current_tournament = None
+        self.current_TO = None
+        self.current_category = None
+
         await self.clean_tournament_channels()
 
     @commands.group(name="setup")
@@ -152,12 +158,7 @@ class TournamentOrganizer(commands.Cog):
                 winner.name + " won the tournament! Nice."
             )
 
-            self.current_tournament = None
-            self.current_TO = None
-            self.current_category = None
-
-            await self.clean_tournament_channels()
-
+            await self.end(ctx)
 
     @report.error
     async def report_error(self, ctx, error):
@@ -229,7 +230,6 @@ class TournamentOrganizer(commands.Cog):
 
         if not self.current_tournament:
             await ctx.send(self.no_tournament_message)
-
             return
             
         await ctx.send(self.current_tournament.get_opponent(player_name))
