@@ -97,6 +97,7 @@ def test_start_tournament():
 
     assert tournament.start_tournament(False) == (bracket, True)
 
+
 def test_update_match():
     tournament = se()
 
@@ -108,11 +109,18 @@ def test_update_match():
     tournament.update_match(2, 1)
     tournament.update_match(4, 0)
 
-    test_match_summary = {'3: player0 vs. player1 level: 2', '1: None vs. player2 level: 1', '0: None vs. player5 level: 0'}
-    actual_match_summary = [match.summary() for _, match in tournament.valid_matches.items()]
+    test_match_summary = {
+        "3: player0 vs. player1 level: 2",
+        "1: None vs. player2 level: 1",
+        "0: None vs. player5 level: 0",
+    }
+    actual_match_summary = [
+        match.summary() for _, match in tournament.valid_matches.items()
+    ]
 
     for match in actual_match_summary:
         assert match in test_match_summary
+
 
 def test_end_game():
     tournament = se()
@@ -126,6 +134,7 @@ def test_end_game():
     assert tournament.update_match(2, 0) == None
     assert tournament.update_match(0, 0).name == "player1"
 
+
 def test_next_match():
     tournament = se()
 
@@ -134,14 +143,18 @@ def test_next_match():
 
     tournament.start_tournament(False)
 
-    assert "You are not in the tournament" == tournament.get_opponent("player")
+    assert tournament.get_opponent("player") == "You are not in the tournament"
 
-    assert "Your next opponent is player1" == tournament.get_opponent("player0")
-    assert "Your next opponent is player3" == tournament.get_opponent("player2")
+    assert tournament.get_opponent("player0") == "Your next opponent is player1"
+    assert tournament.get_opponent("player2") == "Your next opponent is player3"
 
     tournament.update_match(1, 0)
-    assert "Your next opponent is the winner of player2 vs player3" == tournament.get_opponent("player0")
-    assert "You are out of the tournament!" == tournament.get_opponent("player1")
+    assert (
+        tournament.get_opponent("player0")
+        == "Your next opponent is the winner of player2 vs player3"
+    )
+    assert tournament.get_opponent("player1") == "You are out of the tournament!"
+
 
 def test_history():
     tournament = se()
@@ -150,17 +163,51 @@ def test_history():
         tournament.add_player(MockMember("player" + str(i)))
 
     tournament.start_tournament(False)
-    
-    assert "You do not have match history for most recent tournament" == tournament.get_history("player")
-    assert "No match played yet." == tournament.get_history("player0")
+
+    assert (
+        tournament.get_history("player")
+        == "You do not have match history for most recent tournament"
+    )
+    assert tournament.get_history("player0") == "No match played yet."
 
     tournament.update_match(1, 0)
     history = "player0 vs player1 : player0 won\n"
-    assert history == tournament.get_history("player0")
+    assert tournament.get_history("player0") == history
 
     tournament.update_match(2, 0)
     tournament.update_match(0, 1)
 
     history += "player0 vs player2 : player2 won\n"
-    assert history == tournament.get_history("player0")
+    assert tournament.get_history("player0") == history
+
+
+def test_ranking():
+    tournament = se()
+
+    for i in range(6):
+        tournament.add_player(MockMember("player" + str(i)))
+
+    b, _ = tournament.start_tournament(False)
+    print(b)
+    assert tournament.get_ranking() == ""
+    assert tournament.get_ranking("player0") == "You are still in the tournament!"
+
+    tournament.update_match(3, 0)
+    assert tournament.get_ranking() == "5: player1\n"
+    assert tournament.get_ranking("player1") == "player1's rank in the tournament is 5"
+
+    tournament.update_match(2, 0)  # player4 vs player5: player4 won
+    tournament.update_match(4, 1)  # player2 vs player3: player3 won
+    tournament.update_match(1, 1)  # player0 vs player3: player3 won
+    tournament.update_match(0, 1)  # player3 vs player4: player4 won
+
+    ranking = "1: player4\n" + \
+              "2: player3\n" + \
+              "3: player0\n" + \
+              "3: player5\n" + \
+              "5: player1\n" + \
+              "5: player2\n"
+
+    assert tournament.get_ranking() == ranking
+                
 
