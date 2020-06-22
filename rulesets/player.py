@@ -2,7 +2,7 @@ import discord
 
 
 class Player:
-    def __init__(self, user: discord.Member):
+    def __init__(self, user):
         self.user = user
         self.name = user.display_name
         self.current_match = None
@@ -19,3 +19,6 @@ class Player:
 
     def set_current_match(self, next_match):
         self.current_match = next_match
+    
+    def __str__(self):
+        return self.name

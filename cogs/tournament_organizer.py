@@ -117,7 +117,9 @@ class TournamentOrganizer(commands.Cog):
         """
 
         if not self.current_tournament:
-            await ctx.send("No tournament currently available! Start one with `!setup [format]")
+            await ctx.send(
+                "No tournament currently available! Start one with `!setup [format]"
+            )
             return
 
         if ctx.author != self.current_TO or member == None:
@@ -147,15 +149,15 @@ class TournamentOrganizer(commands.Cog):
             self.current_tournament.update_match(player.current_match, result)
 
     @report.error
-    async def report_error(self, ctx, error): 
+    async def report_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.send(
-            "Missing Arguments. Try `!help report`.\n" + 
-            "Example: `!report 1 13`\n" +
-            "Player 1 won in match 13."
+                "Missing Arguments. Try `!help report`.\n"
+                + "Example: `!report 1 13`\n"
+                + "Player 1 won in match 13."
             )
             return
-        
+
         raise error
 
     @commands.command(name="start")
@@ -172,7 +174,13 @@ class TournamentOrganizer(commands.Cog):
             await ctx.send("Only the current TO can starte the tournament!")
             return
 
-        bracket = self.current_tournament.start_tournament()
+        bracket, valid = self.current_tournament.start_tournament()
+
+        if not valid:
+            await ctx.send(
+                "Not enough players to start the tournament! Must have at least 2 players."
+            )
+            return
 
         await ctx.send("Tournament Started!")
         await ctx.send("```" + bracket + "```")
