@@ -15,6 +15,7 @@ class TournamentOrganizer(commands.Cog):
         self.current_category = None
         self.current_TO = None
         self.last_tournament = None
+        self.valid = False
 
         self.no_tournament_message = (
             "No tournament currently available! Start one with `!setup [format]`"
@@ -52,6 +53,7 @@ class TournamentOrganizer(commands.Cog):
         self.current_tournament = None
         self.current_TO = None
         self.current_category = None
+        self.valid = False
 
         await self.clean_tournament_channels()
 
@@ -131,6 +133,10 @@ class TournamentOrganizer(commands.Cog):
             await ctx.send(self.no_tournament_message)
             return
 
+        if self.valid:
+            await ctx.send("Current tournament already started!")
+            return
+
         if ctx.author != self.current_TO or member == None:
             member = ctx.author
 
@@ -166,12 +172,12 @@ class TournamentOrganizer(commands.Cog):
                 pass
 
         except asyncio.TimeoutError:
-            await message.edit(content = "too late.", suppress = True)
+            await message.edit(content="too late.", suppress=True)
         else:
-            await message.edit(content = "confirmed", suppress = True)
+            await message.edit(content="confirmed", suppress=True)
 
     @commands.command(name="update")
-    async def update(self, ctx, match_id: int, member : discord.Member):
+    async def update(self, ctx, match_id: int, member: discord.Member):
         """
             Report result for current tournament.
             Tournament Organizer only.
@@ -180,6 +186,11 @@ class TournamentOrganizer(commands.Cog):
         if not self.current_tournament:
             await ctx.send(self.no_tournament_message)
             return
+
+        if not self.valid:
+            await ctx.send("Current tournament has not started!")
+            return
+
         winner = None
         if ctx.author == self.current_TO:
             try:
@@ -198,7 +209,7 @@ class TournamentOrganizer(commands.Cog):
             await self.end(ctx)
 
     @commands.command(name="report")
-    async def report(self, ctx, member : discord.Member):
+    async def report(self, ctx, member: discord.Member):
         """
             Report match result for current tournament.
         """
@@ -207,12 +218,36 @@ class TournamentOrganizer(commands.Cog):
             await ctx.send(self.no_tournament_message)
             return
 
-        player = self.current_tournament.player_map[ctx.author.id]
+        if not self.valid:
+            await ctx.send("Current tournament has not started!")
+            return
+
+        player = self.current_tournament.player_map.get(ctx.author.id, None)
+
+        if not player:
+            await ctx.send(ctx.author + " is not in the tournament!")
+            return
+
         match = player.current_match
         players = [match.player_one.id, match.player_two.id]
 
         if member.id not in players:
             await ctx.send(member.mention + " is not in the match!")
+            return
+
+        channel = self.channels[self.channel_map[player.id]]
+        player_one = await ctx.guild.fetch_member(players[0])
+        player_two = await ctx.guild.fetch_member(players[1])
+
+        if (
+            not player_one.voice
+            or player_one.voice.channel != channel
+            or not player_two.voice
+            or player_two.voice.channel != channel
+        ):
+            await ctx.send(
+                "Both members of the match must be in the match voice chat to report result!"
+            )
             return
 
         winner = self.current_tournament.update_match(match.match_id, member.id)
@@ -258,12 +293,11 @@ class TournamentOrganizer(commands.Cog):
                 "Not enough players to start the tournament! Must have at least 2 players."
             )
             return
-
+        self.valid = True
         await ctx.send("Tournament Started!")
         await ctx.send("```" + bracket + "```")
 
         guild = ctx.guild
-
         invite = await self.main_channel.create_invite()
 
         i = 0
@@ -287,7 +321,7 @@ class TournamentOrganizer(commands.Cog):
             i += 1
 
     @commands.command(name="matches")
-    async def matches(self, ctx, detail = False):
+    async def matches(self, ctx, detail=False):
         """
             Show all matches that is currently going on.
             Set detail to true to show match id.
