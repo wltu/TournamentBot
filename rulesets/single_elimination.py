@@ -18,50 +18,51 @@ class SingleElimination:
 
         self.ranking = []
 
-
     def add_player(self, user: discord.Member):
-        name = user.display_name
+        id = user.id
 
-        if name in self.player_map.keys():
+        if id in self.player_map.keys():
             return False
         self.num_players += 1
         player = Player(user)
 
-        self.player_map[name] = player
+        self.player_map[id] = player
         self.players.append(player)
 
         return True
 
     def get_players(self):
         return self.players
-    
+
     def get_opponent(self, player):
         if not self.player_map.get(player, None):
             return "You are not in the tournament"
-        
+
         return self.player_map[player].get_opponent()
 
-    def get_ranking(self, player = None):
-        if player:
+    def get_ranking(self, player=-1):
+        if player >= 0:
             if not self.player_map[player].valid:
-                return "{}'s rank in the tournament is {}".format(player, self.player_map[player].rank)
+                return "{}'s rank in the tournament is {}".format(
+                    self.player_map[player].name, self.player_map[player].rank
+                )
             else:
                 return "You are still in the tournament!"
-        
+
         if len(self.ranking) == 0:
             return ""
 
-        self.ranking.sort(key = operator.itemgetter(0, 1))
+        self.ranking.sort(key=operator.itemgetter(0, 1))
         ranks = ""
         for rank in self.ranking:
             ranks += "{0}: {1}".format(rank[0], rank[1]) + "\n"
-        
+
         return ranks
 
     def get_history(self, player):
         if not self.player_map.get(player, None):
             return "You do not have match history for most recent tournament"
-        
+
         history = self.player_map[player].get_history()
 
         if len(history) == 0:
@@ -77,7 +78,7 @@ class SingleElimination:
 
         return output
 
-    def start_tournament(self, shuffle = True):
+    def start_tournament(self, shuffle=True):
 
         if len(self.players) < 2:
             return None, False
@@ -216,7 +217,7 @@ class SingleElimination:
             current_match = self.valid_matches[id]
 
             if not current_match.check_match():
-                current_match.update_match()
+                current_match.update_match(current_match.player_one.id)
 
                 next_match = current_match.next_match
 
@@ -231,17 +232,17 @@ class SingleElimination:
 
         return bracket, True
 
-    def update_match(self, match_index, result):
+    def update_match(self, match_index, winner_id):
         """ 
             Update Bracket Matches. Return the winner when tournament is over.
         """
         match = self.valid_matches[match_index]
 
-        match.update_match(result)
+        match.update_match(winner_id)
         rank = pow(2, match.level) + 1
         rank = min(rank, self.num_players)
 
-        if result == 0:
+        if winner_id == match.player_one.id:
             # player_one won
             match.player_two.rank = rank
             self.ranking.append((rank, match.player_two.name))
@@ -257,7 +258,7 @@ class SingleElimination:
             return match.winner
 
         next_match = match.next_match
-        self.valid_matches[next_match.match_id] = next_match        
+        self.valid_matches[next_match.match_id] = next_match
         self.valid_matches.pop(match_index, None)
 
         return None
@@ -320,9 +321,9 @@ class SingleElimination:
         output_string = ""
 
         for line in output:
-            if len(line)> 0:
+            if len(line) > 0:
                 output_string += line + "\n"
-        
+
         # return output
         return output_string
 

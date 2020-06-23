@@ -44,18 +44,20 @@ class Match:
 
         # return self.right_match == None and self.left_match == None
 
-    def update_match(self, result=0):
-        ''' Update match results '''
-        if result == 0:
+    def update_match(self, winner_id):
+        """ Update match results """
+        if winner_id == self.player_one.id:
             self.winner = self.player_one
-        else:
+        elif winner_id == self.player_two.id:
             self.winner = self.player_two
+        else:
+            raise ValueError("Player id must be either one of the player in the match!")
 
-        if self.player_one: 
-            self.player_one.update_match(result == 0)
+        if self.player_one:
+            self.player_one.update_match(self.winner == self.player_one)
 
-        if self.player_two: 
-            self.player_two.update_match(result != 0)
+        if self.player_two:
+            self.player_two.update_match(self.winner == self.player_two)
 
         if self.next_match:
             self.next_match.update_player(self)
@@ -93,6 +95,11 @@ class Match:
 
     def summary(self):
         return "{0} vs. {1}".format(self.player_one, self.player_two)
+
+    def detailed_summary(self):
+        return "{0}: {1} vs. {2} - level {3}".format(
+            self.match_id, self.player_one, self.player_two, self.level
+        )
 
     def get_player_name(self, player, length):
         if player == None:
