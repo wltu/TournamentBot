@@ -110,9 +110,9 @@ def test_update_match():
     tournament.update_match(4, 0)
 
     test_match_summary = {
-        "3: player0 vs. player1 level: 2",
-        "1: None vs. player2 level: 1",
-        "0: None vs. player5 level: 0",
+        "player0 vs. player1",
+        "None vs. player2",
+        "None vs. player5",
     }
     actual_match_summary = [
         match.summary() for _, match in tournament.valid_matches.items()

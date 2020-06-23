@@ -92,15 +92,7 @@ class Match:
         return bracket
 
     def summary(self):
-        return (
-            str(self.match_id)
-            + ": "
-            + str(self.player_one)
-            + " vs. "
-            + str(self.player_two)
-            + " level: "
-            + str(self.level)
-        )
+        return "{0} vs. {1}".format(self.player_one, self.player_two)
 
     def get_player_name(self, player, length):
         if player == None:

@@ -232,15 +232,14 @@ class SingleElimination:
         return bracket, True
 
     def update_match(self, match_index, result):
-        ''' Update Bracket Matches. Return the winner when tournament is over. '''
+        """ 
+            Update Bracket Matches. Return the winner when tournament is over.
+        """
         match = self.valid_matches[match_index]
 
         match.update_match(result)
         rank = pow(2, match.level) + 1
         rank = min(rank, self.num_players)
-
-        print("Current level = " + str(match.level))
-        print("Current rank = " + str(rank))
 
         if result == 0:
             # player_one won

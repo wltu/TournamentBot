@@ -136,6 +136,7 @@ class TournamentOrganizer(commands.Cog):
         else:
             await ctx.send(member.mention + " is already signed up!")
 
+    
     @commands.command(name="report")
     async def report(self, ctx, result: int, match_id: int = -1):
         """
@@ -157,6 +158,9 @@ class TournamentOrganizer(commands.Cog):
             await ctx.send(
                 winner.name + " won the tournament! Nice."
             )
+
+            await ctx.send("Final Tournament Ranking!")
+            await ctx.send(self.current_tournament.get_ranking())
 
             await self.end(ctx)
 
@@ -221,8 +225,27 @@ class TournamentOrganizer(commands.Cog):
 
             i += 1
 
-    @commands.command(name="match")
-    async def match(self, ctx):
+    @commands.command(name="matches")
+    async def matches(self, ctx):
+        """
+            Show all matches that is currently going on 
+        """
+        if not self.current_tournament:
+            await ctx.send(self.no_tournament_message)
+            return
+        
+        matches = self.current_tournament.valid_matches
+        output = ""
+
+        for _, match in matches.items():
+            output += match.summary() + "\n"
+
+        await ctx.send("All Ongoing matches for the current tournament!")
+        await ctx.send(output)
+
+
+    @commands.command(name="opponent")
+    async def opponent(self, ctx):
         """
             Show the opponents for your next match. 
         """
@@ -233,6 +256,37 @@ class TournamentOrganizer(commands.Cog):
             return
             
         await ctx.send(self.current_tournament.get_opponent(player_name))
+
+    @commands.command(name="rank")
+    async def rank(self, ctx):
+        """
+            Show your tournament rank along with overall ranks in the current tournament.
+            If no tournament active, show the most recent tournament
+        """
+        player_name = ctx.author.display_name
+
+        if self.current_tournament:
+            await ctx.send("Current tournament ranking!")
+            await ctx.send(self.current_tournament.get_ranking(player_name))
+            
+            ranking = self.current_tournament.get_ranking()
+            if len(ranking) == 0:
+                await ctx.send("Tournament just started... No one is out yet!")
+            else:
+                await ctx.send(ranking)
+
+        elif self.last_tournament:
+            await ctx.send("Ranking for the last tournament!")
+            await ctx.send(self.last_tournament.get_ranking(player_name))
+
+            ranking = self.last_tournament.get_ranking()
+            
+            if len(ranking) == 0:
+                await ctx.send("Thank's weird?? The tournament did not finish properly!")
+            else:
+                await ctx.send(ranking)
+        else:
+            await ctx.send("No past tournament within this server!")
 
     @commands.command(name="history")
     async def history(self, ctx):
