@@ -180,13 +180,16 @@ class TournamentOrganizer(commands.Cog):
         if not self.current_tournament:
             await ctx.send(self.no_tournament_message)
             return
-        
+        winner = None
         if ctx.author == self.current_TO:
             try:
                 winner = self.current_tournament.update_match(match_id, member.id)
             except ValueError:
                 await ctx.send(member.mention + " is not in the match!")
                 return
+        else:
+            await ctx.send("Only the current tournament's TO can use this command!")
+            return
 
         if winner:
             await ctx.send(winner.name + " won the tournament! Nice.")
@@ -245,7 +248,7 @@ class TournamentOrganizer(commands.Cog):
             return
 
         if ctx.author != self.current_TO:
-            await ctx.send("Only the current TO can starte the tournament!")
+            await ctx.send("Only the current TO can start the tournament!")
             return
 
         bracket, valid = self.current_tournament.start_tournament()
