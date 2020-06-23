@@ -11,6 +11,8 @@ class Player:
         self.match_history = []
         self.valid = True
 
+        self.rank = None
+
     def get_history(self):
         return self.match_history
 

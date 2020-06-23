@@ -1,4 +1,5 @@
 import discord
+import operator
 import random
 from .match import Match
 from .enums import Bracket
@@ -15,13 +16,15 @@ class SingleElimination:
         self.match_index = 0
         self.valid_matches = {}
 
+        self.ranking = []
+
 
     def add_player(self, user: discord.Member):
         name = user.display_name
 
         if name in self.player_map.keys():
             return False
-
+        self.num_players += 1
         player = Player(user)
 
         self.player_map[name] = player
@@ -37,6 +40,23 @@ class SingleElimination:
             return "You are not in the tournament"
         
         return self.player_map[player].get_opponent()
+
+    def get_ranking(self, player = None):
+        if player:
+            if not self.player_map[player].valid:
+                return "{}'s rank in the tournament is {}".format(player, self.player_map[player].rank)
+            else:
+                return "You are still in the tournament!"
+        
+        if len(self.ranking) == 0:
+            return ""
+
+        self.ranking.sort(key = operator.itemgetter(0, 1))
+        ranks = ""
+        for rank in self.ranking:
+            ranks += "{0}: {1}".format(rank[0], rank[1]) + "\n"
+        
+        return ranks
 
     def get_history(self, player):
         if not self.player_map.get(player, None):
@@ -61,7 +81,7 @@ class SingleElimination:
 
         if len(self.players) < 2:
             return None, False
-
+        self.ranking = []
         self._update_name_length()
         self.valid_matches = {}
         self.match_index = 0
@@ -212,13 +232,31 @@ class SingleElimination:
         return bracket, True
 
     def update_match(self, match_index, result):
-        ''' Update Bracket Matches. Return the winner when tournament is over. '''
-        self.valid_matches[match_index].update_match(result)
+        """ 
+            Update Bracket Matches. Return the winner when tournament is over.
+        """
+        match = self.valid_matches[match_index]
+
+        match.update_match(result)
+        rank = pow(2, match.level) + 1
+        rank = min(rank, self.num_players)
+
+        if result == 0:
+            # player_one won
+            match.player_two.rank = rank
+            self.ranking.append((rank, match.player_two.name))
+        else:
+            # player_two won
+            match.player_one.rank = rank
+            self.ranking.append((rank, match.player_one.name))
 
         if match_index == 0:
-            return self.valid_matches[match_index].winner
+            match.winner.rank = 1
+            self.ranking.append((1, match.winner.name))
 
-        next_match = self.valid_matches[match_index].next_match
+            return match.winner
+
+        next_match = match.next_match
         self.valid_matches[next_match.match_id] = next_match        
         self.valid_matches.pop(match_index, None)
 
