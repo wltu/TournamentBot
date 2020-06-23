@@ -97,7 +97,7 @@ class Match:
         return "{0} vs. {1}".format(self.player_one, self.player_two)
 
     def detailed_summary(self):
-        return "{0}: {1} vs. {2} - level {}".format(
+        return "{0}: {1} vs. {2} - level {3}".format(
             self.match_id, self.player_one, self.player_two, self.level
         )
 

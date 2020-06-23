@@ -1,3 +1,4 @@
+import asyncio
 import discord
 from discord.utils import get
 from discord.ext import commands
@@ -15,7 +16,9 @@ class TournamentOrganizer(commands.Cog):
         self.current_TO = None
         self.last_tournament = None
 
-        self.no_tournament_message = "No tournament currently available! Start one with `!setup [format]`"
+        self.no_tournament_message = (
+            "No tournament currently available! Start one with `!setup [format]`"
+        )
 
     async def clean_tournament_channels(self):
         """ Remove tournament channels """
@@ -33,7 +36,7 @@ class TournamentOrganizer(commands.Cog):
         channel = after.channel
 
         if channel == self.main_channel:
-            channel_id = self.channel_map.get(member.display_name, -1)
+            channel_id = self.channel_map.get(member.id, -1)
 
             if channel_id == -1:
                 await member.move_to(None)
@@ -136,28 +139,83 @@ class TournamentOrganizer(commands.Cog):
         else:
             await ctx.send(member.mention + " is already signed up!")
 
-    
-    @commands.command(name="report")
-    async def report(self, ctx, result: int, match_id: int = -1):
+    @commands.command(name="yes")
+    async def yes(self, ctx):
+        message = await ctx.send("yes")
+        await message.add_reaction("☑️")
+        await message.add_reaction("❌")
+
+        def check(reaction, user):
+
+            return (
+                user == ctx.author
+                and reaction.message.id == message.id
+                and (reaction.emoji == "☑️" or reaction.emoji == "❌")
+            )
+
+        try:
+            reaction, _ = await self.bot.wait_for(
+                "reaction_add", timeout=30.0, check=check
+            )
+
+            if reaction.emoji == "☑️":
+                # Update
+                pass
+            else:
+                # Cancel
+                pass
+
+        except asyncio.TimeoutError:
+            await message.edit(content = "too late.", suppress = True)
+        else:
+            await message.edit(content = "confirmed", suppress = True)
+
+    @commands.command(name="update")
+    async def update(self, ctx, match_id: int, member : discord.Member):
         """
             Report result for current tournament.
+            Tournament Organizer only.
         """
 
         if not self.current_tournament:
             await ctx.send(self.no_tournament_message)
-            
             return
-        winner = None
-        if ctx.author == self.current_TO:
-            winner = self.current_tournament.update_match(match_id, result)
-        else:
-            player = self.current_tournament.player_map[ctx.display_name]
-            winner = self.current_tournament.update_match(player.current_match, result)
         
+        if ctx.author == self.current_TO:
+            try:
+                winner = self.current_tournament.update_match(match_id, member.id)
+            except ValueError:
+                await ctx.send(member.mention + " is not in the match!")
+                return
+
         if winner:
-            await ctx.send(
-                winner.name + " won the tournament! Nice."
-            )
+            await ctx.send(winner.name + " won the tournament! Nice.")
+            await ctx.send("Final Tournament Ranking!")
+            await ctx.send(self.current_tournament.get_ranking())
+            await self.end(ctx)
+
+    @commands.command(name="report")
+    async def report(self, ctx, member : discord.Member):
+        """
+            Report match result for current tournament.
+        """
+
+        if not self.current_tournament:
+            await ctx.send(self.no_tournament_message)
+            return
+
+        player = self.current_tournament.player_map[ctx.author.id]
+        match = player.current_match
+        players = [match.player_one.id, match.player_two.id]
+
+        if member.id not in players:
+            await ctx.send(member.mention + " is not in the match!")
+            return
+
+        winner = self.current_tournament.update_match(match.match_id, member.id)
+
+        if winner:
+            await ctx.send(winner.mention + " won the tournament! Nice.")
 
             await ctx.send("Final Tournament Ranking!")
             await ctx.send(self.current_tournament.get_ranking())
@@ -215,7 +273,7 @@ class TournamentOrganizer(commands.Cog):
             self.channels.append(channel)
 
             for player in [match.player_one, match.player_two]:
-                self.channel_map[player.name] = i
+                self.channel_map[player.id] = i
 
                 dm = player.user.dm_channel
                 if not dm:
@@ -226,36 +284,39 @@ class TournamentOrganizer(commands.Cog):
             i += 1
 
     @commands.command(name="matches")
-    async def matches(self, ctx):
+    async def matches(self, ctx, detail = False):
         """
-            Show all matches that is currently going on 
+            Show all matches that is currently going on.
+            Set detail to true to show match id.
         """
         if not self.current_tournament:
             await ctx.send(self.no_tournament_message)
             return
-        
+
         matches = self.current_tournament.valid_matches
         output = ""
 
         for _, match in matches.items():
-            output += match.summary() + "\n"
+            if detail:
+                output += match.detailed_summary() + "\n"
+            else:
+                output += match.summary() + "\n"
 
-        await ctx.send("All Ongoing matches for the current tournament!")
+        await ctx.send("All ongoing matches for the current tournament!")
         await ctx.send(output)
-
 
     @commands.command(name="opponent")
     async def opponent(self, ctx):
         """
             Show the opponents for your next match. 
         """
-        player_name = ctx.author.display_name
+        player_id = ctx.author.id
 
         if not self.current_tournament:
             await ctx.send(self.no_tournament_message)
             return
-            
-        await ctx.send(self.current_tournament.get_opponent(player_name))
+
+        await ctx.send(self.current_tournament.get_opponent(player_id))
 
     @commands.command(name="rank")
     async def rank(self, ctx):
@@ -263,12 +324,12 @@ class TournamentOrganizer(commands.Cog):
             Show your tournament rank along with overall ranks in the current tournament.
             If no tournament active, show the most recent tournament
         """
-        player_name = ctx.author.display_name
+        player_id = ctx.author.id
 
         if self.current_tournament:
             await ctx.send("Current tournament ranking!")
-            await ctx.send(self.current_tournament.get_ranking(player_name))
-            
+            await ctx.send(self.current_tournament.get_ranking(player_id))
+
             ranking = self.current_tournament.get_ranking()
             if len(ranking) == 0:
                 await ctx.send("Tournament just started... No one is out yet!")
@@ -277,12 +338,14 @@ class TournamentOrganizer(commands.Cog):
 
         elif self.last_tournament:
             await ctx.send("Ranking for the last tournament!")
-            await ctx.send(self.last_tournament.get_ranking(player_name))
+            await ctx.send(self.last_tournament.get_ranking(player_id))
 
             ranking = self.last_tournament.get_ranking()
-            
+
             if len(ranking) == 0:
-                await ctx.send("Thank's weird?? The tournament did not finish properly!")
+                await ctx.send(
+                    "Thank's weird?? The tournament did not finish properly!"
+                )
             else:
                 await ctx.send(ranking)
         else:
@@ -294,14 +357,14 @@ class TournamentOrganizer(commands.Cog):
             Show your match history for current tournament.
             If no tournament active, show the most recent tournament
         """
-        player_name = ctx.author.display_name
+        player_id = ctx.author.id
 
         if self.current_tournament:
             await ctx.send("Your match history from the current tournament")
-            await ctx.send(self.current_tournament.get_history(player_name))
+            await ctx.send(self.current_tournament.get_history(player_id))
         elif self.last_tournament:
             await ctx.send("Your match history from the last tournament")
-            await ctx.send(self.last_tournament.get_history(player_name))
+            await ctx.send(self.last_tournament.get_history(player_id))
         else:
             await ctx.send("No past tournament within this server!")
 
