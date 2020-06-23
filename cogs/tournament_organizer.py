@@ -17,11 +17,11 @@ class Tournament:
         self.valid = False
         self.invite = None
 
+
 class TournamentOrganizer(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.tournament_map = {}
-
 
         self.current_tournament = None
         self.channels = []
@@ -60,7 +60,9 @@ class TournamentOrganizer(commands.Cog):
                         dm = await player.user.create_dm()
                     await dm.send(
                         "{} vs. {}\n{}".format(
-                            match.player_one.name, match.player_two.name, current_server.invite
+                            match.player_one.name,
+                            match.player_two.name,
+                            current_server.invite,
                         )
                     )
 
@@ -203,7 +205,7 @@ class TournamentOrganizer(commands.Cog):
     @commands.command(name="update")
     async def update(self, ctx, match_id: int, member: discord.Member):
         """
-            Report result for current tournament.
+            Update match resutre for current tournament.
             Tournament Organizer only.
         """
         current_server = self.tournament_map[ctx.guild.id]
@@ -219,7 +221,9 @@ class TournamentOrganizer(commands.Cog):
         winner = None
 
         if ctx.author == current_server.current_TO:
-            player = current_server.current_tournament.player_map.get(ctx.author.id, None)
+            player = current_server.current_tournament.player_map.get(
+                ctx.author.id, None
+            )
             match = player.current_match
 
             if not player:
@@ -227,7 +231,9 @@ class TournamentOrganizer(commands.Cog):
                 return
 
             try:
-                winner = current_server.current_tournament.update_match(match_id, member.id)
+                winner = current_server.current_tournament.update_match(
+                    match_id, member.id
+                )
                 if match.player_one.id == member.id:
                     del current_server.channel_map[match.player_two.id]
                 else:
@@ -244,7 +250,7 @@ class TournamentOrganizer(commands.Cog):
     @commands.command(name="report")
     async def report(self, ctx, member: discord.Member):
         """
-            Report match result for current tournament.
+            Report your match result for current tournament.
         """
         current_server = self.tournament_map[ctx.guild.id]
         if not current_server.current_tournament:
@@ -308,7 +314,9 @@ class TournamentOrganizer(commands.Cog):
             )
 
             if reaction.emoji == "☑️":
-                winner = current_server.current_tournament.update_match(match.match_id, member.id)
+                winner = current_server.current_tournament.update_match(
+                    match.match_id, member.id
+                )
 
                 del current_server.channel_map[player_two.id]
 
@@ -388,7 +396,9 @@ class TournamentOrganizer(commands.Cog):
 
                     await dm.send(
                         "{} vs. {}\n{}".format(
-                            match.player_one.name, match.player_two.name, current_server.invite
+                            match.player_one.name,
+                            match.player_two.name,
+                            current_server.invite,
                         )
                     )
 
@@ -397,7 +407,7 @@ class TournamentOrganizer(commands.Cog):
     @commands.command(name="matches")
     async def matches(self, ctx, detail=False):
         """
-            Show all matches that is currently going on.
+            Show all ongoing matches in current tournament
             Set detail to true to show match id.
         """
 
@@ -478,6 +488,8 @@ class TournamentOrganizer(commands.Cog):
         """
         player_id = ctx.author.id
 
+        current_server = self.tournament_map[ctx.guild.id]
+
         if current_server.current_tournament:
             await ctx.send("Your match history from the current tournament")
             await ctx.send(current_server.current_tournament.get_history(player_id))
@@ -499,13 +511,20 @@ class TournamentOrganizer(commands.Cog):
     @setup.command(name="double_elimination", aliases=["de"])
     async def double_elimination(self, ctx):
         """
-            Double Elimination
+            Double Elimination Bracket
         """
-        await ctx.send("double Elimination")
+        await ctx.send("TODO: Double Elimination")
 
     @setup.command(name="round_robin", aliases=["rr"])
     async def round_robin(self, ctx):
         """
             Round Robin
         """
-        await ctx.send("Round Robin")
+        await ctx.send("TODO: Round Robin")
+    
+    @setup.command(name="ladder", aliases=["l"])
+    async def ladder(self, ctx):
+        """
+            Ladder
+        """
+        await ctx.send("TODO: Ladder")
