@@ -112,6 +112,8 @@ class TournamentOrganizer(commands.Cog):
         current_server.invite = None
 
         await self.clean_tournament_channels(ctx)
+        await ctx.send("The tournament is now cleaned up...")
+
 
     @commands.group(name="setup")
     async def setup(self, ctx):
@@ -440,8 +442,14 @@ class TournamentOrganizer(commands.Cog):
         """
         player_id = ctx.author.id
 
+        current_server = self.tournament_map[ctx.guild.id]
+
         if not current_server.current_tournament:
             await ctx.send(self.no_tournament_message)
+            return
+        
+        if not current_server.valid:
+            await ctx.send("Current tournament has not started!")
             return
 
         await ctx.send(current_server.current_tournament.get_opponent(player_id))
@@ -456,6 +464,10 @@ class TournamentOrganizer(commands.Cog):
 
         current_server = self.tournament_map[ctx.guild.id]
         if current_server.current_tournament:
+            if not current_server.valid:
+                await ctx.send("Current tournament has not started!")
+                return
+
             await ctx.send("Current tournament ranking!")
             await ctx.send(current_server.current_tournament.get_ranking(player_id))
 
@@ -491,6 +503,10 @@ class TournamentOrganizer(commands.Cog):
         current_server = self.tournament_map[ctx.guild.id]
 
         if current_server.current_tournament:
+            if not current_server.valid:
+                await ctx.send("Current tournament has not started!")
+                return
+
             await ctx.send("Your match history from the current tournament")
             await ctx.send(current_server.current_tournament.get_history(player_id))
         elif current_server.last_tournament:
