@@ -2,8 +2,6 @@ import discord
 from ..rulesets.single_elimination import SingleElimination as se
 from .mock.mock_member import MockMember
 
-tournament = se()
-
 
 def test_add_player():
     tournament = se()
@@ -154,7 +152,7 @@ def test_next_match():
     assert tournament.get_opponent(0) == "Your next opponent is player1"
     assert tournament.get_opponent(2) == "Your next opponent is player3"
 
-    tournament.update_match(1, 0) # player0 vs player1: player0 won
+    tournament.update_match(1, 0)  # player0 vs player1: player0 won
     assert (
         tournament.get_opponent(0)
         == "Your next opponent is the winner of player2 vs player3"
@@ -176,12 +174,12 @@ def test_history():
     )
     assert tournament.get_history(0) == "No match played yet."
 
-    tournament.update_match(1, 0) # player0 vs player1: player0 won
+    tournament.update_match(1, 0)  # player0 vs player1: player0 won
     history = "player0 vs player1 : player0 won\n"
     assert tournament.get_history(0) == history
 
-    tournament.update_match(2, 2) # player2 vs player2: player2 won
-    tournament.update_match(0, 2) # player0 vs player2: player2 won
+    tournament.update_match(2, 2)  # player2 vs player2: player2 won
+    tournament.update_match(0, 2)  # player0 vs player2: player2 won
 
     history += "player0 vs player2 : player2 won\n"
     assert tournament.get_history(0) == history

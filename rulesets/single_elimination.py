@@ -196,19 +196,6 @@ class SingleElimination:
 
                 player_index += 2
 
-        # print(len(queue))
-        # print(player_index)
-        # print(self.players)
-        # print(len(self.valid_matches))
-        # print(len(self.all_matches))
-
-        # for x in self.all_matches:
-        #     print(x.summary())
-
-        # print()
-        # for x in self.valid_matches:
-        #     print(self.valid_matches[x].summary())
-
         bracket = self.get_initial_bracket()
 
         add_matches = []
@@ -340,4 +327,3 @@ class SingleElimination:
             self.longest_player_name_length = max(
                 len(name), self.longest_player_name_length
             )
-

@@ -21,6 +21,30 @@ class TournamentOrganizer(commands.Cog):
             "No tournament currently available! Start one with `!setup [format]`"
         )
 
+    async def after_update_match(self, ctx, winner, player):
+        """ Action after updating a match result """
+        if winner:
+            await ctx.send(winner.mention + " won the tournament! Nice.")
+
+            await ctx.send("Final Tournament Ranking!")
+            await ctx.send(self.current_tournament.get_ranking())
+
+            await self.end(ctx)
+        else:
+            match = player.current_match
+            if match.check_match:
+                match_vc_id = self.channel_map[player.id]
+
+                for player in [match.player_one, match.player_two]:
+                    self.channel_map[player.id] = match_vc_id
+
+                    dm = player.user.dm_channel
+                    if not dm:
+                        dm = await player.user.create_dm()
+
+                    await dm.send(match.player_one.name + " vs. " + match.player_two.name)
+                    await dm.send(self.invite)
+
     async def clean_tournament_channels(self):
         """ Remove tournament channels """
         for channel in self.channels:
@@ -54,6 +78,7 @@ class TournamentOrganizer(commands.Cog):
         self.current_TO = None
         self.current_category = None
         self.valid = False
+        self.invite = None
 
         await self.clean_tournament_channels()
 
@@ -145,37 +170,6 @@ class TournamentOrganizer(commands.Cog):
         else:
             await ctx.send(member.mention + " is already signed up!")
 
-    @commands.command(name="yes")
-    async def yes(self, ctx):
-        message = await ctx.send("yes")
-        await message.add_reaction("☑️")
-        await message.add_reaction("❌")
-
-        def check(reaction, user):
-
-            return (
-                user == ctx.author
-                and reaction.message.id == message.id
-                and (reaction.emoji == "☑️" or reaction.emoji == "❌")
-            )
-
-        try:
-            reaction, _ = await self.bot.wait_for(
-                "reaction_add", timeout=30.0, check=check
-            )
-
-            if reaction.emoji == "☑️":
-                # Update
-                pass
-            else:
-                # Cancel
-                pass
-
-        except asyncio.TimeoutError:
-            await message.edit(content="too late.", suppress=True)
-        else:
-            await message.edit(content="confirmed", suppress=True)
-
     @commands.command(name="update")
     async def update(self, ctx, match_id: int, member: discord.Member):
         """
@@ -192,21 +186,29 @@ class TournamentOrganizer(commands.Cog):
             return
 
         winner = None
+
         if ctx.author == self.current_TO:
+            player = self.current_tournament.player_map.get(ctx.author.id, None)
+            match = player.current_match
+
+            if not player:
+                await ctx.send(ctx.author + " is not in the tournament!")
+                return
+
             try:
                 winner = self.current_tournament.update_match(match_id, member.id)
+                if match.player_one.id == member.id:
+                    del self.channel_map[match.player_two.id]
+                else:
+                    del self.channel_map[match.player_one.id]
             except ValueError:
                 await ctx.send(member.mention + " is not in the match!")
                 return
+
+            await self.after_update_match(ctx, winner, player)
         else:
             await ctx.send("Only the current tournament's TO can use this command!")
             return
-
-        if winner:
-            await ctx.send(winner.name + " won the tournament! Nice.")
-            await ctx.send("Final Tournament Ranking!")
-            await ctx.send(self.current_tournament.get_ranking())
-            await self.end(ctx)
 
     @commands.command(name="report")
     async def report(self, ctx, member: discord.Member):
@@ -275,21 +277,15 @@ class TournamentOrganizer(commands.Cog):
             )
 
             if reaction.emoji == "☑️":
-                # Update
-
                 winner = self.current_tournament.update_match(match.match_id, member.id)
+
+                del self.channel_map[player_two.id]
+
                 await message.edit(
                     content=report_megssage + " Confirmed!", suppress=True
                 )
 
-                if winner:
-                    await ctx.send(winner.mention + " won the tournament! Nice.")
-
-                    await ctx.send("Final Tournament Ranking!")
-                    await ctx.send(self.current_tournament.get_ranking())
-
-                    await self.end(ctx)
-
+                await self.after_update_match(ctx, winner, player)
             else:
                 await message.edit(
                     content=report_megssage + " Report canceled!", suppress=True
@@ -312,7 +308,7 @@ class TournamentOrganizer(commands.Cog):
         raise error
 
     @commands.command(name="start")
-    async def start(self, ctx):
+    async def start(self, ctx, shuffle=True):
         """
             Start current tournament!
         """
@@ -325,7 +321,7 @@ class TournamentOrganizer(commands.Cog):
             await ctx.send("Only the current TO can start the tournament!")
             return
 
-        bracket, valid = self.current_tournament.start_tournament()
+        bracket, valid = self.current_tournament.start_tournament(shuffle)
 
         if not valid:
             await ctx.send(
@@ -337,27 +333,30 @@ class TournamentOrganizer(commands.Cog):
         await ctx.send("```" + bracket + "```")
 
         guild = ctx.guild
-        invite = await self.main_channel.create_invite()
+        self.invite = await self.main_channel.create_invite()
 
         i = 0
         for match_id in self.current_tournament.valid_matches:
             match = self.current_tournament.valid_matches[match_id]
 
-            channel = await guild.create_voice_channel(
-                "match" + str(i), category=self.current_category, sync_permissions=True
-            )
-            self.channels.append(channel)
+            if match.check_match():
+                channel = await guild.create_voice_channel(
+                    "match" + str(i),
+                    category=self.current_category,
+                    sync_permissions=True,
+                )
+                self.channels.append(channel)
 
-            for player in [match.player_one, match.player_two]:
-                self.channel_map[player.id] = i
+                for player in [match.player_one, match.player_two]:
+                    self.channel_map[player.id] = i
 
-                dm = player.user.dm_channel
-                if not dm:
-                    dm = await player.user.create_dm()
-
-                await dm.send(invite)
-
-            i += 1
+                    dm = player.user.dm_channel
+                    if not dm:
+                        dm = await player.user.create_dm()
+                    
+                    await dm.send(match.player_one.name + " vs. " + match.player_two.name)
+                    await dm.send(self.invite)
+                i += 1
 
     @commands.command(name="matches")
     async def matches(self, ctx, detail=False):
@@ -367,6 +366,10 @@ class TournamentOrganizer(commands.Cog):
         """
         if not self.current_tournament:
             await ctx.send(self.no_tournament_message)
+            return
+
+        if not self.valid:
+            await ctx.send("Current tournament has not started!")
             return
 
         matches = self.current_tournament.valid_matches

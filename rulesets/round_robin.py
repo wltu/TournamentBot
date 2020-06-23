@@ -1,4 +1,4 @@
-class DoubleElimination:
+class RoundRobin:
     def __init__(self):
         self.num_players = 0
         self.players = []

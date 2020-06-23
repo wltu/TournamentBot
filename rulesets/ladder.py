@@ -1,4 +1,4 @@
-class DoubleElimination:
+class Ladder:
     def __init__(self):
         self.num_players = 0
         self.players = []

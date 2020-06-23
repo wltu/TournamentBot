@@ -59,7 +59,7 @@ class Common(commands.Cog):
         voice.play(audio_source)
 
     @commands.command(name="test")
-    async def test(self, ctx, member : discord.Member):
+    async def test(self, ctx, member: discord.Member):
         """ Test Command """
         print(member.mention)
         await ctx.send("test: " + member.mention)
@@ -101,11 +101,15 @@ class Common(commands.Cog):
                         voice = await channel.connect()
                     else:
                         await voice.move_to(channel)
-                
+
                 await ctx.send(
-                    "Playing `" + filename[8 + len(guild_id):] + "` in `" + str(channel) + "`"
+                    "Playing `"
+                    + filename[8 + len(guild_id) :]
+                    + "` in `"
+                    + str(channel)
+                    + "`"
                 )
-                self.playing_music[ctx.guild.id] = True 
+                self.playing_music[ctx.guild.id] = True
                 self.play_audio(voice, filename + ".mp3")
             else:
                 await ctx.send("Music is being played in " + str(voice.channel) + "!")
