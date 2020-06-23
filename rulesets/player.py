@@ -38,14 +38,17 @@ class Player:
                 return "Your next opponent is {0}".format(match.player_two)
             else:
                 match = match.right_match
-                return "Your next opponent is the winner of {0} vs {1}".format(match.player_one, match.player_two, )
+                return "Your next opponent is the winner of {0} vs {1}".format(
+                    match.player_one, match.player_two,
+                )
         else:
             if match.player_one:
                 return "Your next opponent is {0}".format(match.player_one)
             else:
                 match = match.left_match
-                return "Your next opponent is the winner of {0} vs {1}".format(match.player_one, match.player_two, )
-
+                return "Your next opponent is the winner of {0} vs {1}".format(
+                    match.player_one, match.player_two,
+                )
 
     def set_current_match(self, next_match):
         self.current_match = next_match
@@ -53,5 +56,5 @@ class Player:
     def __str__(self):
         if not self.mention:
             return self.name
-        
+
         return self.mention

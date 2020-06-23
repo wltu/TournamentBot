@@ -5,44 +5,28 @@ class DoubleElimination:
         self.longest_player_name_length = 0
 
     def add_player(self, player_name):
-        self.players.append(player_name)
+        pass
+
+    def get_opponent(self, player):
+        pass
+
+    def get_ranking(self, player=-1):
+        pass
+
+    def get_history(self, player):
+        pass
 
     def get_players(self):
         return self.players
 
-    def start_tournament(self):
+    def start_tournament(self, shuffle=True):
+        pass
+
+    def update_match(self, match_index, winner_id):
         pass
 
     def get_initial_bracket(self):
-        # bracket = ""
-        # self._update_name_length()
-
-        # # for player in self.players:
-        # for i, player in enumerate(self.players):
-        #     if (i % 2):
-        #         bracket += " " * (self.longest_player_name_length + 2) + \
-        #             "|---\n"
-        #     elif (i > 0):
-        #         bracket += "\n"
-
-        #     bracket += self._get_player_name(player)
-
-        bracket = []
-        self._update_name_length()
-
-        # for player in self.players:
-        for i, player in enumerate(self.players):
-            bracket.append(self._get_player_name(player))
-
-            if i != len(self.players) - 1:
-                bracket.append(" " * (self.longest_player_name_length + 2))
-
-        bracket_output = ""
-
-        for b in bracket:
-            bracket_output += b + "\n"
-
-        return bracket_output
+        return ""
 
     def _get_player_name(self, player):
         return (
