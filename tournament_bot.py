@@ -99,7 +99,7 @@ def test_rulesets():
     # for key, val in se.valid_matches.items():
     #     print(key)
     #     print(val.summary())
-    
+
     # se.update_match(7, 0)
 
     # print("update")
@@ -107,7 +107,6 @@ def test_rulesets():
     # for key, val in se.valid_matches.items():
     #     print(key)
     #     print(val.summary())
-
 
     # print(se.get_initial_bracket())
 
@@ -122,8 +121,6 @@ def test_rulesets():
     se.update_match(1, 0)
     print(se.player_map["0"].current_match.summary())
     print(se.player_map["0"].get_opponent())
-
-    
 
 
 if __name__ == "__main__":

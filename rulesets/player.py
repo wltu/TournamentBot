@@ -7,6 +7,7 @@ class Player:
         self.name = user.display_name
         self.current_match = None
         self.mention = user.mention
+        self.id = user.id
 
         self.match_history = []
         self.valid = True
