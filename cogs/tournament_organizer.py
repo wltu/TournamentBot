@@ -145,37 +145,6 @@ class TournamentOrganizer(commands.Cog):
         else:
             await ctx.send(member.mention + " is already signed up!")
 
-    @commands.command(name="yes")
-    async def yes(self, ctx):
-        message = await ctx.send("yes")
-        await message.add_reaction("☑️")
-        await message.add_reaction("❌")
-
-        def check(reaction, user):
-
-            return (
-                user == ctx.author
-                and reaction.message.id == message.id
-                and (reaction.emoji == "☑️" or reaction.emoji == "❌")
-            )
-
-        try:
-            reaction, _ = await self.bot.wait_for(
-                "reaction_add", timeout=30.0, check=check
-            )
-
-            if reaction.emoji == "☑️":
-                # Update
-                pass
-            else:
-                # Cancel
-                pass
-
-        except asyncio.TimeoutError:
-            await message.edit(content="too late.", suppress=True)
-        else:
-            await message.edit(content="confirmed", suppress=True)
-
     @commands.command(name="update")
     async def update(self, ctx, match_id: int, member: discord.Member):
         """
