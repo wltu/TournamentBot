@@ -236,8 +236,13 @@ class TournamentOrganizer(commands.Cog):
             return
 
         channel = self.channels[self.channel_map[player.id]]
-        player_one = await ctx.guild.fetch_member(players[0])
-        player_two = await ctx.guild.fetch_member(players[1])
+        player_one = member
+
+        player_id = players[0]
+        if players[0] == member.id:
+            player_id = players[1]
+
+        player_two = await ctx.guild.fetch_member(player_id)
 
         if (
             not player_one.voice
@@ -250,15 +255,49 @@ class TournamentOrganizer(commands.Cog):
             )
             return
 
-        winner = self.current_tournament.update_match(match.match_id, member.id)
+        report_megssage = match.summary() + " -> " + member.mention + " won? "
+        message = await ctx.send(
+            report_megssage + player_two.mention + " please confrim!"
+        )
+        await message.add_reaction("☑️")
+        await message.add_reaction("❌")
 
-        if winner:
-            await ctx.send(winner.mention + " won the tournament! Nice.")
+        def check(reaction, user):
+            return (
+                user == player_two
+                and reaction.message.id == message.id
+                and (reaction.emoji == "☑️" or reaction.emoji == "❌")
+            )
 
-            await ctx.send("Final Tournament Ranking!")
-            await ctx.send(self.current_tournament.get_ranking())
+        try:
+            reaction, _ = await self.bot.wait_for(
+                "reaction_add", timeout=30.0, check=check
+            )
 
-            await self.end(ctx)
+            if reaction.emoji == "☑️":
+                # Update
+
+                winner = self.current_tournament.update_match(match.match_id, member.id)
+                await message.edit(
+                    content=report_megssage + " Confirmed!", suppress=True
+                )
+
+                if winner:
+                    await ctx.send(winner.mention + " won the tournament! Nice.")
+
+                    await ctx.send("Final Tournament Ranking!")
+                    await ctx.send(self.current_tournament.get_ranking())
+
+                    await self.end(ctx)
+
+            else:
+                await message.edit(
+                    content=report_megssage + " Report canceled!", suppress=True
+                )
+        except asyncio.TimeoutError:
+            await message.edit(
+                content=report_megssage + " Report canceled!", suppress=True
+            )
 
     @report.error
     async def report_error(self, ctx, error):
