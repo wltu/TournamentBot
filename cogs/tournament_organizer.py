@@ -5,9 +5,24 @@ from discord.ext import commands
 from rulesets.single_elimination import SingleElimination
 
 
+class Tournament:
+    def __init__(self):
+        self.current_tournament = None
+        self.channels = []
+        self.channel_map = {}
+        self.main_channel = None
+        self.current_category = None
+        self.current_TO = None
+        self.last_tournament = None
+        self.valid = False
+        self.invite = None
+
 class TournamentOrganizer(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.tournament_map = {}
+
+
         self.current_tournament = None
         self.channels = []
         self.channel_map = {}
@@ -23,64 +38,78 @@ class TournamentOrganizer(commands.Cog):
 
     async def after_update_match(self, ctx, winner, player):
         """ Action after updating a match result """
+        current_server = self.tournament_map[ctx.guild.id]
+
         if winner:
             await ctx.send(winner.mention + " won the tournament! Nice.")
 
             await ctx.send("Final Tournament Ranking!")
-            await ctx.send(self.current_tournament.get_ranking())
+            await ctx.send(current_server.current_tournament.get_ranking())
 
             await self.end(ctx)
         else:
             match = player.current_match
             if match.check_match:
-                match_vc_id = self.channel_map[player.id]
+                match_vc_id = current_server.channel_map[player.id]
 
                 for player in [match.player_one, match.player_two]:
-                    self.channel_map[player.id] = match_vc_id
+                    current_server.channel_map[player.id] = match_vc_id
 
                     dm = player.user.dm_channel
                     if not dm:
                         dm = await player.user.create_dm()
+                    await dm.send(
+                        "{} vs. {}\n{}".format(
+                            match.player_one.name, match.player_two.name, current_server.invite
+                        )
+                    )
 
-                    await dm.send(match.player_one.name + " vs. " + match.player_two.name)
-                    await dm.send(self.invite)
-
-    async def clean_tournament_channels(self):
+    async def clean_tournament_channels(self, ctx):
         """ Remove tournament channels """
-        for channel in self.channels:
+        current_server = self.tournament_map[ctx.guild.id]
+
+        for channel in current_server.channels:
             await channel.delete()
 
-        self.channels = []
-        self.channel_map = {}
+        current_server.channels = []
+        current_server.channel_map = {}
+
+    @commands.Cog.listener()
+    async def on_guild_available(self, guild):
+        self.tournament_map[guild.id] = Tournament()
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
-        if self.main_channel == None:
+        current_server = self.tournament_map[member.guild.id]
+
+        if current_server.main_channel == None:
             return
 
         channel = after.channel
 
-        if channel == self.main_channel:
-            channel_id = self.channel_map.get(member.id, -1)
+        if channel == current_server.main_channel:
+            channel_id = current_server.channel_map.get(member.id, -1)
 
             if channel_id == -1:
                 await member.move_to(None)
             else:
-                await member.move_to(self.channels[channel_id])
+                await member.move_to(current_server.channels[channel_id])
 
     @commands.command(name="end")
     async def end(self, ctx):
         """
             End the current tournament and remove all the tournament voice channels.
         """
-        self.last_tournament = self.current_tournament
-        self.current_tournament = None
-        self.current_TO = None
-        self.current_category = None
-        self.valid = False
-        self.invite = None
+        current_server = self.tournament_map[ctx.guild.id]
 
-        await self.clean_tournament_channels()
+        current_server.last_tournament = current_server.current_tournament
+        current_server.current_tournament = None
+        current_server.current_TO = None
+        current_server.current_category = None
+        current_server.valid = False
+        current_server.invite = None
+
+        await self.clean_tournament_channels(ctx)
 
     @commands.group(name="setup")
     async def setup(self, ctx):
@@ -93,7 +122,7 @@ class TournamentOrganizer(commands.Cog):
 
             Type !help setup [format] for more info on a the selected format.
         """
-        self.current_TO = ctx.author
+        self.tournament_map[ctx.guild.id].current_TO = ctx.author
 
         guild = ctx.guild
 
@@ -143,8 +172,8 @@ class TournamentOrganizer(commands.Cog):
         except discord.Forbidden:
             print("Cannot update permission for channel!")
 
-        self.current_category = tournament_category
-        self.main_channel = main_channel
+        self.tournament_map[ctx.guild.id].current_category = tournament_category
+        self.tournament_map[ctx.guild.id].main_channel = main_channel
 
         await ctx.send("Setuping up tournament...")
 
@@ -153,19 +182,20 @@ class TournamentOrganizer(commands.Cog):
         """
             Signup for current tournament.
         """
+        current_server = self.tournament_map[ctx.guild.id]
 
-        if not self.current_tournament:
+        if not current_server.current_tournament:
             await ctx.send(self.no_tournament_message)
             return
 
-        if self.valid:
+        if current_server.valid:
             await ctx.send("Current tournament already started!")
             return
 
-        if ctx.author != self.current_TO or member == None:
+        if ctx.author != current_server.current_TO or member == None:
             member = ctx.author
 
-        if self.current_tournament.add_player(member):
+        if current_server.current_tournament.add_player(member):
             await ctx.send(member.mention + " is now signed up!")
         else:
             await ctx.send(member.mention + " is already signed up!")
@@ -176,19 +206,20 @@ class TournamentOrganizer(commands.Cog):
             Report result for current tournament.
             Tournament Organizer only.
         """
+        current_server = self.tournament_map[ctx.guild.id]
 
-        if not self.current_tournament:
+        if not current_server.current_tournament:
             await ctx.send(self.no_tournament_message)
             return
 
-        if not self.valid:
+        if not current_server.valid:
             await ctx.send("Current tournament has not started!")
             return
 
         winner = None
 
-        if ctx.author == self.current_TO:
-            player = self.current_tournament.player_map.get(ctx.author.id, None)
+        if ctx.author == current_server.current_TO:
+            player = current_server.current_tournament.player_map.get(ctx.author.id, None)
             match = player.current_match
 
             if not player:
@@ -196,11 +227,11 @@ class TournamentOrganizer(commands.Cog):
                 return
 
             try:
-                winner = self.current_tournament.update_match(match_id, member.id)
+                winner = current_server.current_tournament.update_match(match_id, member.id)
                 if match.player_one.id == member.id:
-                    del self.channel_map[match.player_two.id]
+                    del current_server.channel_map[match.player_two.id]
                 else:
-                    del self.channel_map[match.player_one.id]
+                    del current_server.channel_map[match.player_one.id]
             except ValueError:
                 await ctx.send(member.mention + " is not in the match!")
                 return
@@ -215,16 +246,16 @@ class TournamentOrganizer(commands.Cog):
         """
             Report match result for current tournament.
         """
-
-        if not self.current_tournament:
+        current_server = self.tournament_map[ctx.guild.id]
+        if not current_server.current_tournament:
             await ctx.send(self.no_tournament_message)
             return
 
-        if not self.valid:
+        if not current_server.valid:
             await ctx.send("Current tournament has not started!")
             return
 
-        player = self.current_tournament.player_map.get(ctx.author.id, None)
+        player = current_server.current_tournament.player_map.get(ctx.author.id, None)
 
         if not player:
             await ctx.send(ctx.author + " is not in the tournament!")
@@ -237,7 +268,7 @@ class TournamentOrganizer(commands.Cog):
             await ctx.send(member.mention + " is not in the match!")
             return
 
-        channel = self.channels[self.channel_map[player.id]]
+        channel = current_server.channels[current_server.channel_map[player.id]]
         player_one = member
 
         player_id = players[0]
@@ -277,9 +308,9 @@ class TournamentOrganizer(commands.Cog):
             )
 
             if reaction.emoji == "☑️":
-                winner = self.current_tournament.update_match(match.match_id, member.id)
+                winner = current_server.current_tournament.update_match(match.match_id, member.id)
 
-                del self.channel_map[player_two.id]
+                del current_server.channel_map[player_two.id]
 
                 await message.edit(
                     content=report_megssage + " Confirmed!", suppress=True
@@ -312,50 +343,55 @@ class TournamentOrganizer(commands.Cog):
         """
             Start current tournament!
         """
+        current_server = self.tournament_map[ctx.guild.id]
 
-        if not self.current_TO:
+        if not current_server.current_TO:
             await ctx.send("There is currently no tournament. Try `!setup [format]`")
             return
 
-        if ctx.author != self.current_TO:
+        if ctx.author != current_server.current_TO:
             await ctx.send("Only the current TO can start the tournament!")
             return
 
-        bracket, valid = self.current_tournament.start_tournament(shuffle)
+        bracket, valid = current_server.current_tournament.start_tournament(shuffle)
 
         if not valid:
             await ctx.send(
                 "Not enough players to start the tournament! Must have at least 2 players."
             )
             return
-        self.valid = True
+        current_server.valid = True
         await ctx.send("Tournament Started!")
         await ctx.send("```" + bracket + "```")
 
         guild = ctx.guild
-        self.invite = await self.main_channel.create_invite()
+        current_server.invite = await current_server.main_channel.create_invite()
 
         i = 0
-        for match_id in self.current_tournament.valid_matches:
-            match = self.current_tournament.valid_matches[match_id]
+        for match_id in current_server.current_tournament.valid_matches:
+            match = current_server.current_tournament.valid_matches[match_id]
 
             if match.check_match():
                 channel = await guild.create_voice_channel(
                     "match" + str(i),
-                    category=self.current_category,
+                    category=current_server.current_category,
                     sync_permissions=True,
                 )
-                self.channels.append(channel)
+                current_server.channels.append(channel)
 
                 for player in [match.player_one, match.player_two]:
-                    self.channel_map[player.id] = i
+                    current_server.channel_map[player.id] = i
 
                     dm = player.user.dm_channel
                     if not dm:
                         dm = await player.user.create_dm()
-                    
-                    await dm.send(match.player_one.name + " vs. " + match.player_two.name)
-                    await dm.send(self.invite)
+
+                    await dm.send(
+                        "{} vs. {}\n{}".format(
+                            match.player_one.name, match.player_two.name, current_server.invite
+                        )
+                    )
+
                 i += 1
 
     @commands.command(name="matches")
@@ -364,15 +400,18 @@ class TournamentOrganizer(commands.Cog):
             Show all matches that is currently going on.
             Set detail to true to show match id.
         """
-        if not self.current_tournament:
+
+        current_server = self.tournament_map[ctx.guild.id]
+
+        if not current_server.current_tournament:
             await ctx.send(self.no_tournament_message)
             return
 
-        if not self.valid:
+        if not current_server.valid:
             await ctx.send("Current tournament has not started!")
             return
 
-        matches = self.current_tournament.valid_matches
+        matches = current_server.current_tournament.valid_matches
         output = ""
 
         for _, match in matches.items():
@@ -391,11 +430,11 @@ class TournamentOrganizer(commands.Cog):
         """
         player_id = ctx.author.id
 
-        if not self.current_tournament:
+        if not current_server.current_tournament:
             await ctx.send(self.no_tournament_message)
             return
 
-        await ctx.send(self.current_tournament.get_opponent(player_id))
+        await ctx.send(current_server.current_tournament.get_opponent(player_id))
 
     @commands.command(name="rank")
     async def rank(self, ctx):
@@ -405,21 +444,22 @@ class TournamentOrganizer(commands.Cog):
         """
         player_id = ctx.author.id
 
-        if self.current_tournament:
+        current_server = self.tournament_map[ctx.guild.id]
+        if current_server.current_tournament:
             await ctx.send("Current tournament ranking!")
-            await ctx.send(self.current_tournament.get_ranking(player_id))
+            await ctx.send(current_server.current_tournament.get_ranking(player_id))
 
-            ranking = self.current_tournament.get_ranking()
+            ranking = current_server.current_tournament.get_ranking()
             if len(ranking) == 0:
                 await ctx.send("Tournament just started... No one is out yet!")
             else:
                 await ctx.send(ranking)
 
-        elif self.last_tournament:
+        elif current_server.last_tournament:
             await ctx.send("Ranking for the last tournament!")
-            await ctx.send(self.last_tournament.get_ranking(player_id))
+            await ctx.send(current_server.last_tournament.get_ranking(player_id))
 
-            ranking = self.last_tournament.get_ranking()
+            ranking = current_server.last_tournament.get_ranking()
 
             if len(ranking) == 0:
                 await ctx.send(
@@ -438,12 +478,12 @@ class TournamentOrganizer(commands.Cog):
         """
         player_id = ctx.author.id
 
-        if self.current_tournament:
+        if current_server.current_tournament:
             await ctx.send("Your match history from the current tournament")
-            await ctx.send(self.current_tournament.get_history(player_id))
-        elif self.last_tournament:
+            await ctx.send(current_server.current_tournament.get_history(player_id))
+        elif current_server.last_tournament:
             await ctx.send("Your match history from the last tournament")
-            await ctx.send(self.last_tournament.get_history(player_id))
+            await ctx.send(current_server.last_tournament.get_history(player_id))
         else:
             await ctx.send("No past tournament within this server!")
 
@@ -452,7 +492,7 @@ class TournamentOrganizer(commands.Cog):
         """
             Single Elimination Bracket
         """
-        self.current_tournament = SingleElimination()
+        self.tournament_map[ctx.guild.id].current_tournament = SingleElimination()
 
         await ctx.send("Single Elimination Bracket setted up. Signup!")
 
