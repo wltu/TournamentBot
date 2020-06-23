@@ -42,6 +42,7 @@ class TournamentOrganizer(commands.Cog):
                     if not dm:
                         dm = await player.user.create_dm()
 
+                    await dm.send(match.player_one.name + " vs. " + match.player_two.name)
                     await dm.send(self.invite)
 
     async def clean_tournament_channels(self):
@@ -352,7 +353,8 @@ class TournamentOrganizer(commands.Cog):
                     dm = player.user.dm_channel
                     if not dm:
                         dm = await player.user.create_dm()
-
+                    
+                    await dm.send(match.player_one.name + " vs. " + match.player_two.name)
                     await dm.send(self.invite)
                 i += 1
 
